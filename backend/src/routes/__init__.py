@@ -1,0 +1,1 @@
+from src.routes.api.v1 import api_v1

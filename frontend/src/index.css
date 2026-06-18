@@ -1,0 +1,107 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+
+@layer base {
+  :root {
+    --background: 45 8% 97%;
+    --foreground: 20 14% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 20 14% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14% 15%;
+
+    --primary: 39 85% 35%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 45 15% 88%;
+    --secondary-foreground: 20 14% 15%;
+
+    --muted: 45 15% 92%;
+    --muted-foreground: 25 5% 45%;
+
+    --accent: 213 85% 18%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 45 20% 88%;
+    --input: 45 20% 88%;
+    --ring: 39 85% 35%;
+
+    --radius: 1rem;
+  }
+
+  .dark {
+    --background: 20 14% 8%;
+    --foreground: 45 8% 95%;
+
+    --card: 20 14% 10%;
+    --card-foreground: 45 8% 95%;
+
+    --popover: 20 14% 10%;
+    --popover-foreground: 45 8% 95%;
+
+    --primary: 39 85% 45%;
+    --primary-foreground: 20 14% 8%;
+
+    --secondary: 20 14% 15%;
+    --secondary-foreground: 45 8% 95%;
+
+    --muted: 20 14% 15%;
+    --muted-foreground: 25 5% 65%;
+
+    --accent: 213 85% 28%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 20 14% 20%;
+    --input: 20 14% 20%;
+    --ring: 39 85% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-inter;
+  }
+
+  .font-inter {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .font-crimson {
+    font-family: 'Crimson Text', serif;
+  }
+}
+
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

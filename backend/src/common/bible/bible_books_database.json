@@ -1,0 +1,662 @@
+[
+	{
+		"book_name" : "Gênesis",
+		"abbreviation" : "gn",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 50,
+		"summary" : "Criação, queda, dilúvio, patriarcas e alianças.",
+		"id" : "38954970-ca44-4ee1-bce2-337b8757f49f",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Êxodo",
+		"abbreviation" : "ex",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 40,
+		"summary" : "Libertação do Egito, leis e construção do tabernáculo.",
+		"id" : "85fb16fd-84fa-42c3-86ab-dbdf62728614",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Levítico",
+		"abbreviation" : "lv",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 27,
+		"summary" : "Leis sobre culto, pureza, sacrifícios e sacerdócio.",
+		"id" : "2a920121-1df0-4359-a7de-ced7d3cfc331",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Números",
+		"abbreviation" : "nm",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 36,
+		"summary" : "Peregrinação no deserto e censos de Israel.",
+		"id" : "fcd266ea-2475-40f8-8d2a-148f098d55d1",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Deuteronômio",
+		"abbreviation" : "dt",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 34,
+		"summary" : "Últimos discursos de Moisés e renovação da aliança.",
+		"id" : "e0b56d0d-cb3d-4305-a963-fab192f62855",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Josué",
+		"abbreviation" : "js",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 24,
+		"summary" : "Conquista e divisão da terra prometida.",
+		"id" : "39ed3fca-f646-453c-a4b4-60313f818a37",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Juízes",
+		"abbreviation" : "jz",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 21,
+		"summary" : "Ciclo de pecado, opressão e libertação por juízes.",
+		"id" : "aef86939-4bcd-4ec7-b4d5-6f545aa644ba",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Rute",
+		"abbreviation" : "rt",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 4,
+		"summary" : "História de fidelidade e redenção em Belém.",
+		"id" : "ed64abb1-0d91-43a6-b0c0-b90888c268ab",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "1 Samuel",
+		"abbreviation" : "1sm",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 31,
+		"summary" : "Início da monarquia: Samuel, Saul e Davi.",
+		"id" : "f7cbd363-4047-483c-b74c-cb0f8aff8a53",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "2 Samuel",
+		"abbreviation" : "2sm",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 24,
+		"summary" : "Reinado de Davi sobre Israel.",
+		"id" : "f6e60e6f-7185-4622-b1ff-112f0722b415",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "1 Reis",
+		"abbreviation" : "1rs",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 22,
+		"summary" : "Salomão, divisão do reino e profetas.",
+		"id" : "4b194b79-d29a-4cb0-8ae9-5b7aec766bc7",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "2 Reis",
+		"abbreviation" : "2rs",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 25,
+		"summary" : "Reinos divididos até o exílio.",
+		"id" : "36deedc2-fa75-43f9-be53-2047bfc999b7",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "1 Crônicas",
+		"abbreviation" : "1cr",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 29,
+		"summary" : "Genealogias e reinado de Davi.",
+		"id" : "ef4a426b-f72d-45ee-8467-3bd5bcc34f27",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "2 Crônicas",
+		"abbreviation" : "2cr",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 36,
+		"summary" : "Reis de Judá até o exílio.",
+		"id" : "8e74e10a-9e20-42f0-9bb7-84145b058d7c",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Esdras",
+		"abbreviation" : "ed",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 10,
+		"summary" : "Retorno do exílio e restauração do templo.",
+		"id" : "16ed4fb5-54e4-4f79-9786-258a6256140c",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Neemias",
+		"abbreviation" : "ne",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 13,
+		"summary" : "Reconstrução dos muros de Jerusalém.",
+		"id" : "faf5cd86-83e3-4139-85ce-65664a8817dc",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Ester",
+		"abbreviation" : "et",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 10,
+		"summary" : "Deus livra os judeus por meio de Ester.",
+		"id" : "5dfdf3e3-b188-4c90-919e-973dd104f22b",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Jó",
+		"abbreviation" : "jó",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 42,
+		"summary" : "Sofrimento de um homem justo e sua restauração.",
+		"id" : "85cbbfbd-ea80-4d3f-a262-3c305f962a42",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Salmos",
+		"abbreviation" : "sl",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 150,
+		"summary" : "Cânticos e orações de louvor, lamento e sabedoria.",
+		"id" : "70796bcd-9e0e-4838-b369-2cd1acd937ee",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Provérbios",
+		"abbreviation" : "pv",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 31,
+		"summary" : "Ensinamentos de sabedoria para a vida prática.",
+		"id" : "60540b16-7876-4614-a41b-1e98f90d47b3",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Eclesiastes",
+		"abbreviation" : "ec",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 12,
+		"summary" : "Reflexões sobre o sentido da vida.",
+		"id" : "242e89a0-63c5-45b5-83d7-291cd037575e",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Cantares",
+		"abbreviation" : "ct",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 8,
+		"summary" : "Poesia sobre o amor entre o noivo e a noiva.",
+		"id" : "814e16c5-a5c8-488e-a98c-a72fb3acc489",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Isaías",
+		"abbreviation" : "is",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 66,
+		"summary" : "Profecias sobre julgamento, restauração e o Messias.",
+		"id" : "db863daf-65d3-4752-aa11-8c682b26ee18",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Jeremias",
+		"abbreviation" : "jr",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 52,
+		"summary" : "Profecias antes e durante o exílio.",
+		"id" : "0a30552f-98ba-4cc1-b7c3-a228a3697fa8",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Lamentações",
+		"abbreviation" : "lm",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 5,
+		"summary" : "Lamento pela destruição de Jerusalém.",
+		"id" : "2442667f-8750-4366-9a39-cc7606768c06",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Ezequiel",
+		"abbreviation" : "ez",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 48,
+		"summary" : "Visões e mensagens de julgamento e esperança.",
+		"id" : "f7560bf8-6b20-4e1c-b595-de23b1f7a0b8",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Daniel",
+		"abbreviation" : "dn",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 12,
+		"summary" : "Fidelidade no exílio e visões proféticas.",
+		"id" : "efb0985a-da91-4cdc-aff6-7cc08cac1a22",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Oseias",
+		"abbreviation" : "os",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 14,
+		"summary" : "Amor fiel de Deus a Israel infiel.",
+		"id" : "30f09045-a7f8-496a-ad7c-05513e0a7b5e",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Joel",
+		"abbreviation" : "jl",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 3,
+		"summary" : "O Dia do Senhor e promessa do Espírito.",
+		"id" : "a4e870ed-e850-4e48-82e9-dd1df6ca5c6f",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Amós",
+		"abbreviation" : "am",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 9,
+		"summary" : "Justiça de Deus contra a opressão social.",
+		"id" : "f9a4caea-088b-436d-9830-33f1be91c647",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Obadias",
+		"abbreviation" : "ob",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 1,
+		"summary" : "Profecia contra Edom.",
+		"id" : "f3bf41ed-64ed-4a13-b267-e7d05cd08039",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Jonas",
+		"abbreviation" : "jn",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 4,
+		"summary" : "Profeta relutante e a misericórdia de Deus sobre Nínive.",
+		"id" : "107d3e58-9b11-49ba-9b11-7534a3ba43b1",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Miquéias",
+		"abbreviation" : "mq",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 7,
+		"summary" : "Julgamento e promessa do Reino do Messias.",
+		"id" : "6106d283-c59b-4cbd-8358-491b8393e08c",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Naum",
+		"abbreviation" : "na",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 3,
+		"summary" : "Juízo contra Nínive.",
+		"id" : "6c86cda4-6cc8-46d6-be3a-15f37fdc683f",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Habacuque",
+		"abbreviation" : "hc",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 3,
+		"summary" : "Diálogo com Deus sobre o sofrimento e a justiça.",
+		"id" : "3c98e736-a236-4829-ab3f-c402c70810ce",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Sofonias",
+		"abbreviation" : "sf",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 3,
+		"summary" : "O Dia do Senhor e restauração dos humildes.",
+		"id" : "df7785b5-0078-488d-8476-d290ae445c3d",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Ageu",
+		"abbreviation" : "ag",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 2,
+		"summary" : "Chamado à reconstrução do templo.",
+		"id" : "18ef0bb4-b7a7-4df9-be33-64196926203d",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Zacarias",
+		"abbreviation" : "zc",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 14,
+		"summary" : "Visões de esperança e restauração messiânica.",
+		"id" : "784435d7-305e-49f1-aec2-024fac559c31",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Malaquias",
+		"abbreviation" : "ml",
+		"section" : "Antigo Testamento",
+		"quantity_chapters" : 4,
+		"summary" : "Chamado ao arrependimento e promessa do mensageiro.",
+		"id" : "a2d27871-fab5-4259-a266-f35bb09597ff",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Mateus",
+		"abbreviation" : "mt",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 28,
+		"summary" : "Jesus como Messias e cumprimento da profecia.",
+		"id" : "04086967-e517-4585-abb1-f6a1f4fc9e50",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Marcos",
+		"abbreviation" : "mc",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 16,
+		"summary" : "Evangelho breve e dinâmico sobre o ministério de Jesus.",
+		"id" : "f59be204-5790-43f6-abda-f6518f7c3a11",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Lucas",
+		"abbreviation" : "lc",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 24,
+		"summary" : "Relato detalhado da vida de Jesus, com foco em compaixão e inclusão.",
+		"id" : "48cf81da-1cda-49bd-9ab8-9ae04c5a0afa",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "João",
+		"abbreviation" : "jo",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 21,
+		"summary" : "Jesus como o Verbo, o Filho de Deus eterno.",
+		"id" : "2e04661e-adb0-406c-a02d-c9c0b0dd9bb8",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Atos",
+		"abbreviation" : "at",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 28,
+		"summary" : "Nascimento e expansão da Igreja pelo Espírito Santo.",
+		"id" : "d9601e6f-c37c-4ff2-a914-3b6a32572fca",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Romanos",
+		"abbreviation" : "rm",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 16,
+		"summary" : "Doutrina da salvação pela fé e vida no Espírito.",
+		"id" : "e5a1ba95-aa43-48a8-aee7-bdd828dec54f",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "1 Coríntios",
+		"abbreviation" : "1co",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 16,
+		"summary" : "Correção e ensino sobre a vida cristã na igreja.",
+		"id" : "3ad45679-996e-4f60-815b-98bfc7a65825",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "2 Coríntios",
+		"abbreviation" : "2co",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 13,
+		"summary" : "Defesa do ministério apostólico e encorajamento.",
+		"id" : "5daeddd6-dc45-46a4-839c-f97cd846756c",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Gálatas",
+		"abbreviation" : "gl",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 6,
+		"summary" : "Liberdade do evangelho versus legalismo.",
+		"id" : "a7e913d5-f3ea-4e22-addd-5a44020ba2d5",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Efésios",
+		"abbreviation" : "ef",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 6,
+		"summary" : "Unidade da Igreja e vida em Cristo.",
+		"id" : "6418846a-a37d-4a9a-94c9-b0833e766376",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Filipenses",
+		"abbreviation" : "fp",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 4,
+		"summary" : "Alegria em Cristo apesar das circunstâncias.",
+		"id" : "f1f5df69-8c19-49e5-823c-8159ba7baecc",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Colossenses",
+		"abbreviation" : "cl",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 4,
+		"summary" : "Supremacia de Cristo sobre todas as coisas.",
+		"id" : "908440f7-8748-4020-a7e0-2a3c2e5db13e",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "1 Tessalonicenses",
+		"abbreviation" : "1ts",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 5,
+		"summary" : "Encorajamento e ensino sobre a volta de Cristo.",
+		"id" : "d15eb30d-f6e9-49c3-8140-8db51d24f251",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "2 Tessalonicenses",
+		"abbreviation" : "2ts",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 3,
+		"summary" : "Correções sobre escatologia e firmeza na fé.",
+		"id" : "ac056cb2-5ff3-42b6-acf5-9e4a2911fb08",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "1 Timóteo",
+		"abbreviation" : "1tm",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 6,
+		"summary" : "Instruções pastorais para liderança na igreja.",
+		"id" : "304153f2-6012-4daa-9991-3601aaf882f3",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "2 Timóteo",
+		"abbreviation" : "2tm",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 4,
+		"summary" : "Últimas palavras de Paulo a um jovem pastor.",
+		"id" : "db5f8d15-7e1a-4717-a344-532a05c05a8e",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Tito",
+		"abbreviation" : "tt",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 3,
+		"summary" : "Conselhos práticos para liderança e boa conduta.",
+		"id" : "7b4109c0-1baa-4385-b728-b859831c77d6",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Filemom",
+		"abbreviation" : "fm",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 1,
+		"summary" : "Apelo pessoal por perdão e reconciliação.",
+		"id" : "2635f77e-0e82-42d5-8397-549908d5f0a3",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Hebreus",
+		"abbreviation" : "hb",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 13,
+		"summary" : "Cristo como cumprimento da antiga aliança.",
+		"id" : "89b386ce-bf8d-4579-b424-f273b987cde0",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Tiago",
+		"abbreviation" : "tg",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 5,
+		"summary" : "Fé prática e viva demonstrada por obras.",
+		"id" : "50a4d2fd-bbd6-45c6-bb83-71f6099349dc",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "1 Pedro",
+		"abbreviation" : "1pe",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 5,
+		"summary" : "Sofrimento com esperança e santidade.",
+		"id" : "e37e4fa3-48c2-4be1-8e4d-22e122798b77",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "2 Pedro",
+		"abbreviation" : "2pe",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 3,
+		"summary" : "Advertência contra falsos mestres e escárnio.",
+		"id" : "6469c1f1-a06e-43b4-898b-0ac48d77d9d0",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "1 João",
+		"abbreviation" : "1jo",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 5,
+		"summary" : "Amor, verdade e certeza da salvação.",
+		"id" : "3d7e459f-cfcc-4a8c-a298-1db41ce6f0b8",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "2 João",
+		"abbreviation" : "2jo",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 1,
+		"summary" : "Verdade e amor em equilíbrio cristão.",
+		"id" : "378e1f08-bf5e-4f45-bddb-02a7acea46c8",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "3 João",
+		"abbreviation" : "3jo",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 1,
+		"summary" : "Hospitalidade e integridade no ministério.",
+		"id" : "ca89671a-5f04-45c7-a73c-2172f404f9ac",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Judas",
+		"abbreviation" : "jd",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 1,
+		"summary" : "Luta pela fé contra falsos ensinos.",
+		"id" : "60e4cb7f-4a02-4f60-a738-48652e68c953",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	},
+	{
+		"book_name" : "Apocalipse",
+		"abbreviation" : "ap",
+		"section" : "Novo Testamento",
+		"quantity_chapters" : 22,
+		"summary" : "Visões do juízo, triunfo de Cristo e nova criação.",
+		"id" : "acdec2f5-14b0-490f-bf6d-858a14eabdd0",
+		"created_at" : "2025-07-25T14:14:52.675Z",
+		"updated_at" : "2025-07-25T14:14:52.675Z"
+	}
+]
