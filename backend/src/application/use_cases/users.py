@@ -5,7 +5,6 @@ from uuid import UUID
 from fastapi import Response, status
 from src.infrastructure.repositories.app_repository import AppRepository
 from src.infrastructure.repositories.redis_repository import RedisRepository
-from src.infrastructure.apis.asaas_api import AsaasAPI
 from src.schemas.users_schemas import PostRegisterUserSchema, PostAuthenticateUserSchema
 from src.common.authentication import hash_password, verify_password, generate_tokens
 from src.common.utilities import serialize, get_future_date, generate_verification_code
@@ -16,15 +15,9 @@ _logger = logging.getLogger(__name__)
 
 
 class UsersUseCase:
-    def __init__(
-        self,
-        repository: AppRepository,
-        redis_repository: RedisRepository,
-        asaas_api: AsaasAPI = None,
-    ) -> None:
+    def __init__(self, repository: AppRepository, redis_repository: RedisRepository) -> None:
         self.repository       = repository
         self.redis_repository = redis_repository
-        self.asaas_api        = asaas_api
 
     async def register_user(self, data: PostRegisterUserSchema) -> Response:
         user_data             = data.model_dump()
@@ -39,17 +32,6 @@ class UsersUseCase:
         }
         email_verification = await self.repository.users.create_email_verification(email_data)
 
-        # Create Asaas customer in parallel with a no-op coroutine if needed
-        if self.asaas_api:
-            asaas_customer = await self.asaas_api.create_customer(
-                name=new_user.username,
-                document=new_user.document_number,
-            )
-            external_id = asaas_customer.get("id")
-            if external_id:
-                await self.repository.users.update_user_external_id(new_user.id, external_id)
-
-        # Send verification email in a thread (smtplib is synchronous)
         email_body = template_email_confirmation(
             username=new_user.username,
             verification_code=email_verification.verification_code,
@@ -105,13 +87,7 @@ class UsersUseCase:
             )
 
         user_session = await self.repository.users.register_user_session(db_user.id)
-        access_token = generate_tokens(
-            db_user.id,
-            db_user.external_id,
-            user_session.id,
-            db_user.subscription_id,
-            db_user.address_id,
-        )
+        access_token = generate_tokens(db_user.id, user_session.id)
         response_data = serialize({
             "message":    "User authenticated successfully",
             "token":      access_token.access_token,

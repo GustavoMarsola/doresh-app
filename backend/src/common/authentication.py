@@ -25,21 +25,15 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def generate_tokens(
     user_id: uuid.UUID,
-    ext_id: str,
     session_id: uuid.UUID = None,
-    subscription_id: uuid.UUID = None,
-    address_id: uuid.UUID = None,
 ) -> AuthenticateTokenSchema:
     now = datetime.now(timezone.utc)
 
     access_payload = {
-        "sub":             str(user_id),
-        "external_id":     ext_id,
-        "session_id":      str(session_id)      if session_id      else None,
-        "subscription_id": str(subscription_id) if subscription_id else None,
-        "address_id":      str(address_id)      if address_id      else None,
-        "exp":             now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
-        "type":            "access",
+        "sub":        str(user_id),
+        "session_id": str(session_id) if session_id else None,
+        "exp":        now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+        "type":       "access",
     }
     access_token = jwt.encode(access_payload, SECRET_KEY, algorithm=ALGORITHM)
     expires_on   = ACCESS_TOKEN_EXPIRE_MINUTES * 60

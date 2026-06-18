@@ -2,7 +2,6 @@ from uuid import UUID
 from fastapi import APIRouter, Request, Response, status, Depends
 from src.infrastructure.repositories.app_repository import AppRepository
 from src.infrastructure.repositories.redis_repository import RedisRepository
-from src.infrastructure.apis import AsaasAPI, asaas_facade
 from src.schemas.users_schemas import PostRegisterUserSchema, PostAuthenticateUserSchema
 from src.application.use_cases.users import UsersUseCase
 from src.common.decorators import session_token_required, api_key_required
@@ -18,9 +17,8 @@ async def post_user(
     data: PostRegisterUserSchema,
     app_repository: AppRepository = Depends(),
     redis_repository: RedisRepository = Depends(),
-    asaas_api: AsaasAPI = Depends(asaas_facade),
 ) -> Response:
-    return await UsersUseCase(app_repository, redis_repository, asaas_api).register_user(data)
+    return await UsersUseCase(app_repository, redis_repository).register_user(data)
 
 
 @router.get(path="/verify-email/{verification_id}", status_code=status.HTTP_200_OK)

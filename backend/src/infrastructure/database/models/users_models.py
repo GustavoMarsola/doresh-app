@@ -31,10 +31,8 @@ class UsersModel(EntityModel):
     phone:           Mapped[str]  = mapped_column(nullable=True)
     active:          Mapped[bool] = mapped_column(default=False)
     verified:        Mapped[bool] = mapped_column(default=False)
-    external_id:     Mapped[str]  = mapped_column(unique=True, nullable=True)
 
-    address_id:      Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), ForeignKey("addresses.id"), nullable=True)
-    subscription_id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), ForeignKey("subscriptions.id"), nullable=True)
+    address_id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), ForeignKey("addresses.id"), nullable=True)
 
 
 class UsersVerificationModel(EntityModel):

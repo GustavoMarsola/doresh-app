@@ -9,11 +9,6 @@ from src.infrastructure.database.models.studies_models import (
     StudySectionModel,
     StudyReferenceModel,
 )
-from src.infrastructure.database.models.subscriptions_models import (
-    PlansModel,
-    SubscriptionsModel,
-    SubscriptionsEventsModel,
-)
 from src.infrastructure.database.models.users_models import (
     UsersModel,
     UsersVerificationModel,

@@ -107,11 +107,6 @@ class OpenAISettings(BaseSettings):
     is_test_mode:         bool = Field(True, validation_alias="IS_TEST_MODE")
 
 
-class AsaasSettings(BaseSettings):
-    asaas_host:         str = Field(..., validation_alias="ASAAS_HOST")
-    asaas_access_token: str = Field(..., validation_alias="ASAAS_ACCESS_TOKEN")
-
-
 class GeneralSettings(BaseSettings):
     app_settings:      ClassVar = AppSettings()
     auth_settings:     ClassVar = AuthSettings()
@@ -120,7 +115,6 @@ class GeneralSettings(BaseSettings):
     redis_settings:    ClassVar = RedisSettings()
     email_settings:    ClassVar = EmailSettings()
     openai_settings:   ClassVar = OpenAISettings()
-    asaas_settings:    ClassVar = AsaasSettings()
 
 
 @lru_cache

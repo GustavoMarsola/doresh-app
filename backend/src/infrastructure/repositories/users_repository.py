@@ -43,7 +43,6 @@ class UsersRepository:
         if not verification:
             return None, None
 
-        # Check expiration before confirming
         if verification.expires_at < date.today():
             return None, None
 
@@ -73,16 +72,6 @@ class UsersRepository:
         stmt = select(UsersModel).where(UsersModel.id == user_id)
         result = await self.db_session.execute(stmt)
         return result.scalar_one_or_none()
-
-    async def update_user_external_id(self, user_id: UUID, external_id: str) -> UsersModel | None:
-        stmt = select(UsersModel).where(UsersModel.id == user_id)
-        result = await self.db_session.execute(stmt)
-        user = result.scalar_one_or_none()
-        if user:
-            user.external_id = external_id
-            await self.db_session.commit()
-            await self.db_session.refresh(user)
-        return user
 
     async def register_user_session(self, user_id: UUID) -> SessionsModel:
         session = SessionsModel(user_id=user_id)
@@ -133,13 +122,3 @@ class UsersRepository:
         )
         result = await self.db_session.execute(stmt)
         return result.scalars().all()
-
-    async def update_user_subscription(self, user_id: str, subscription_id: str) -> UsersModel | None:
-        stmt = select(UsersModel).where(UsersModel.id == user_id)
-        result = await self.db_session.execute(stmt)
-        user = result.scalar_one_or_none()
-        if user:
-            user.subscription_id = subscription_id
-            await self.db_session.commit()
-            await self.db_session.refresh(user)
-        return user
