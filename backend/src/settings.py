@@ -1,8 +1,13 @@
 from enum import Enum
+from pathlib import Path
 from typing import ClassVar, Optional, List
 from functools import lru_cache
 from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Repo root .env (backend/src/settings.py -> backend/ -> repo root), resolved
+# independent of the process's cwd so `uvicorn main:app` works from backend/ too.
+_ENV_FILE = Path(__file__).resolve().parent.parent.parent / ".env"
 
 
 class Environment(str, Enum):
@@ -11,7 +16,12 @@ class Environment(str, Enum):
     PRODUCTION  = "production"
 
 
-class AppSettings(BaseSettings):
+class _EnvFileSettings(BaseSettings):
+    """Base class that loads variables from the repo-root .env file (real env vars still win, e.g. docker-compose)."""
+    model_config = SettingsConfigDict(env_file=_ENV_FILE, env_file_encoding="utf-8", extra="ignore")
+
+
+class AppSettings(_EnvFileSettings):
     app_name:    str  = Field("doresh_backend",  validation_alias="APP_NAME")
     app_version: str  = Field("1.0.0",           validation_alias="APP_VERSION")
     app_host:    str  = Field("0.0.0.0",          validation_alias="APP_HOST")
@@ -26,14 +36,14 @@ class AppSettings(BaseSettings):
     timeout_graceful_shutdown: int = Field(100,  validation_alias="FASTAPI_TIMEOUT_GRACEFUL_SHUTDOWN")
 
 
-class AuthSettings(BaseSettings):
+class AuthSettings(_EnvFileSettings):
     secret_key:                  str = Field(...,  validation_alias="JWT_SECRET_KEY")
     algorithm:                   str = Field(...,  validation_alias="JWT_ALGORITHM")
     access_token_expire_minutes: int = Field(120,  validation_alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     email_token_expire_minutes:  int = Field(240,  validation_alias="EMAIL_TOKEN_EXPIRE_MINUTES")
 
 
-class DatabaseSettings(BaseSettings):
+class DatabaseSettings(_EnvFileSettings):
     database_pool_size:             int  = Field(10,   validation_alias="DATABASE_POOL_SIZE")
     database_pool_timeout_seconds:  int  = Field(2,    validation_alias="DATABASE_POOL_TIMEOUT_SECONDS")
     database_max_overflow:          int  = Field(10,   validation_alias="DATABASE_MAX_OVERFLOW")
@@ -63,7 +73,7 @@ class DatabaseSettings(BaseSettings):
         )
 
 
-class LogSettings(BaseSettings):
+class LogSettings(_EnvFileSettings):
     log_level: str = Field(
         "ERROR",
         validation_alias="LOG_LEVEL",
@@ -82,7 +92,7 @@ class LogSettings(BaseSettings):
     log_level_sqlalchemy:    str = Field("ERROR", validation_alias="LOG_LEVEL_SQLALCHEMY")
 
 
-class RedisSettings(BaseSettings):
+class RedisSettings(_EnvFileSettings):
     redis_host:                  str           = Field("localhost", validation_alias="REDIS_HOST")
     redis_socket_timeout:        float         = Field(0.1,         validation_alias="REDIS_SOCKET_TIMEOUT")
     redis_user:                  Optional[str] = Field(None,        validation_alias="REDIS_USERNAME")
@@ -93,14 +103,14 @@ class RedisSettings(BaseSettings):
     redis_cache_expiration:      int           = Field(600,         validation_alias="REDIS_CACHE_EXPIRATION")
 
 
-class EmailSettings(BaseSettings):
+class EmailSettings(_EnvFileSettings):
     email_host:     str = Field(..., validation_alias="EMAIL_HOST")
     email_port:     int = Field(..., validation_alias="EMAIL_PORT")
     email_user:     str = Field(..., validation_alias="EMAIL_USER")
     email_password: str = Field(..., validation_alias="EMAIL_PASSWORD")
 
 
-class OpenAISettings(BaseSettings):
+class OpenAISettings(_EnvFileSettings):
     openai_api_key:       str  = Field(...,  validation_alias="OPENAI_API_KEY")
     openai_api_gpt_model: str  = Field(...,  validation_alias="OPENAI_API_GPT_MODEL")
     open_ai_assistant_id: str  = Field(...,  validation_alias="OPENAI_ASSISTANT_ID")

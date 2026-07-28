@@ -1,8 +1,10 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 
 from src.routes import health_check, api_v1
 from src.settings import get_settings
@@ -44,6 +46,14 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @_app.exception_handler(IntegrityError)
+    async def _integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
+        _logger.warning("IntegrityError on %s: %s", request.url.path, exc)
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content={"message": "Resource already exists or violates a data constraint"},
+        )
 
     return _app
 

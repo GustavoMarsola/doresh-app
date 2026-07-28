@@ -68,18 +68,20 @@ class StudiesRepository:
         # selectin carrega sections e references automaticamente
         return result.scalars().all()
 
-    async def get_study_by_id(self, study_id: UUID) -> StudyModel | None:
-        stmt = select(StudyModel).where(StudyModel.id == study_id)
+    async def get_study_owned_by_user(self, study_id: UUID, user_id: UUID) -> StudyModel | None:
+        stmt = select(StudyModel).where(StudyModel.id == study_id, StudyModel.user_id == user_id)
         result = await self.db_session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def update_study(self, data: PatchStudySchema) -> None:
-        study = await self.get_study_by_id(data.study_id)
-        if study:
-            if data.title        is not None: study.title        = data.title
-            if data.introduction is not None: study.introduction = data.introduction
-            if data.conclusion   is not None: study.conclusion   = data.conclusion
-            await self.db_session.commit()
+    async def update_study(self, user_id: UUID, data: PatchStudySchema) -> StudyModel | None:
+        study = await self.get_study_owned_by_user(data.study_id, user_id)
+        if not study:
+            return None
+
+        if data.title        is not None: study.title        = data.title
+        if data.introduction is not None: study.introduction = data.introduction
+        if data.conclusion   is not None: study.conclusion   = data.conclusion
+        await self.db_session.commit()
 
         # Atualiza seções por ID
         for section_patch in data.sections:
@@ -111,10 +113,12 @@ class StudiesRepository:
                 ))
             await self.db_session.commit()
 
-    async def deactivate_study(self, study_id: UUID) -> StudyModel:
-        study = await self.get_study_by_id(study_id)
+        return study
+
+    async def deactivate_study(self, user_id: UUID, study_id: UUID) -> StudyModel | None:
+        study = await self.get_study_owned_by_user(study_id, user_id)
         if not study:
-            raise ValueError("Study not found or already inactive")
+            return None
         study.active = False
         await self.db_session.commit()
         return study

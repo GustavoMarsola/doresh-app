@@ -9,11 +9,7 @@ def template_email_confirmation(username: str, verification_code: str) -> str:
         <div style="max-width: 650px; margin: auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); padding: 30px;">
 
           <div style="text-align: center; margin-bottom: 25px;">
-            <img 
-              src="https://jxdcjyeahikhixyohcaz.supabase.co/storage/v1/object/public/hbtech-public/mecontabilllogo.jpg"
-              alt="Logo MeContaBill"
-              style="max-width: 180px;"
-            >
+            <span style="font-size: 22px; font-weight: bold; color: #1a73e8; letter-spacing: 1px;">DORESH</span>
           </div>
 
           <h2 style="color: #2c3e50; text-align: center;">
@@ -64,9 +60,6 @@ def template_email_confirmation(username: str, verification_code: str) -> str:
           <p style="text-align: center; margin: 0; font-size: 15px; color: #444;">
             <strong>Atenciosamente,</strong><br>
             Equipe Doresh<br>
-            📧 <a href="mailto:contato@mecontabill.com.br" style="color: #1a73e8;">
-              contato@mecontabill.com.br
-            </a><br>
             🌐 <a href="https://doresh-tjkb.onrender.com/" style="color: #1a73e8;">
               doresh-tjkb.onrender.com
             </a>

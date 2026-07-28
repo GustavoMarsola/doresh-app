@@ -4,13 +4,17 @@ from src.infrastructure.repositories.app_repository import AppRepository
 from src.infrastructure.repositories.redis_repository import RedisRepository
 from src.schemas.users_schemas import PostRegisterUserSchema, PostAuthenticateUserSchema
 from src.application.use_cases.users import UsersUseCase
-from src.common.decorators import session_token_required, api_key_required
+from src.common.decorators import session_token_required, api_key_required, rate_limiter
 
 
 router = APIRouter(prefix="/user")
 
 
-@router.post(path="/register", status_code=status.HTTP_201_CREATED)
+@router.post(
+    path="/register",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(rate_limiter("register", max_attempts=5, window_seconds=60))],
+)
 @api_key_required
 async def post_user(
     request: Request,
@@ -31,7 +35,11 @@ async def get_verify_email(
     return await UsersUseCase(app_repository, redis_repository).verify_email(verification_id)
 
 
-@router.post(path="/authenticate", status_code=status.HTTP_200_OK)
+@router.post(
+    path="/authenticate",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(rate_limiter("authenticate", max_attempts=10, window_seconds=60))],
+)
 @api_key_required
 async def post_authenticate_user(
     request: Request,

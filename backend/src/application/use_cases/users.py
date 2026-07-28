@@ -1,6 +1,7 @@
 import json
 import asyncio
 import logging
+from time import time
 from uuid import UUID
 from fastapi import Response, status
 from src.infrastructure.repositories.app_repository import AppRepository
@@ -10,6 +11,9 @@ from src.common.authentication import hash_password, verify_password, generate_t
 from src.common.utilities import serialize, get_future_date, generate_verification_code
 from src.common.email_templates import template_email_confirmation
 from src.application.use_cases.email import EmailService
+from src.common.decorators import SESSION_BLACKLIST_PREFIX
+from src.settings import get_settings
+from src.exceptions import NotFoundException, UnauthorizedException
 
 _logger = logging.getLogger(__name__)
 
@@ -62,10 +66,7 @@ class UsersUseCase:
     async def verify_email(self, verification_id: UUID) -> Response:
         user, verification = await self.repository.users.update_user_email_verification(verification_id)
         if not user or not verification:
-            return Response(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content=json.dumps({"message": "Verification not found or link expired"}),
-            )
+            raise NotFoundException("Verification not found or link expired")
         response_data = serialize({
             "message":      "Email verified successfully",
             "user":         user,
@@ -75,16 +76,9 @@ class UsersUseCase:
 
     async def authenticate_user(self, data: PostAuthenticateUserSchema) -> Response:
         db_user = await self.repository.users.get_user_by_email(data.email)
-        if not db_user:
-            return Response(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content=json.dumps({"message": "User not found"}),
-            )
-        if not verify_password(data.password, db_user.password):
-            return Response(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content=json.dumps({"message": "Invalid credentials"}),
-            )
+        # Mesma mensagem/status para e-mail inexistente e senha errada — evita enumeração de e-mails cadastrados.
+        if not db_user or not verify_password(data.password, db_user.password):
+            raise UnauthorizedException("Invalid credentials")
 
         user_session = await self.repository.users.register_user_session(db_user.id)
         access_token = generate_tokens(db_user.id, user_session.id)
@@ -99,20 +93,22 @@ class UsersUseCase:
         session_id = payload_token.get("session_id")
         session    = await self.repository.users.logout_session(session_id)
         if not session:
-            return Response(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content=json.dumps({"message": "Session not found"}),
-            )
+            raise NotFoundException("Session not found")
+
+        # Revoga o access token imediatamente: sem isso ele continuaria válido até expirar.
+        ttl_seconds = max(int(payload_token.get("exp", 0) - time()), 1) if payload_token.get("exp") else (
+            get_settings().auth_settings.access_token_expire_minutes * 60
+        )
+        await self.redis_repository.insert_key_ttl(
+            f"{SESSION_BLACKLIST_PREFIX}{session_id}", "1", ttl_seconds
+        )
         response_data = {"message": "User logged out successfully", "session": serialize(session)}
         return Response(status_code=status.HTTP_200_OK, content=json.dumps(response_data))
 
     async def user_profile(self, payload_token: dict) -> Response:
         user_id = payload_token.get("sub")
         if not user_id:
-            return Response(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content=json.dumps({"message": "Unauthorized. Try to login again."}),
-            )
+            raise UnauthorizedException("Unauthorized. Try to login again.")
         highlights = await self.repository.users.get_user_highlights(user_id)
         comments   = await self.repository.users.get_user_comments(user_id)
         response   = serialize({

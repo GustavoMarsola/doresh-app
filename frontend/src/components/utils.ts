@@ -1,9 +1,7 @@
-import * as fs from "fs";
 import jsPDF from "jspdf";
 import { SermonType } from "@/types/sermon";
 
 
-export const BEARER_TOKEN = localStorage.getItem("token")
 export const API_BASE_URL = import.meta.env.VITE_API_HOST
 
 export function normalizeString(str: string): string {
@@ -134,10 +132,11 @@ export const exportSermonToPDF = async (sermon: SermonType) => {
 };
 
 export const handleLogout = () => {
+  const token = localStorage.getItem('token');
   try {
     fetch(`${API_BASE_URL}/user/logout`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${BEARER_TOKEN}` },
+      headers: { 'Authorization': `Bearer ${token}` },
     });
   } catch (error) {
     console.error('Erro ao fazer logout:', error);
@@ -146,12 +145,3 @@ export const handleLogout = () => {
     window.location.href = '/login';
   }
 };
-
-export function readJSON<T>(path: string): T {
-  try {
-    const data = fs.readFileSync(path, { encoding: "utf-8" });
-    return JSON.parse(data) as T;
-  } catch (err) {
-    throw new Error(`Erro ao ler o arquivo JSON em ${path}: ${(err as Error).message}`);
-  }
-}
