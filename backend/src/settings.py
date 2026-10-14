@@ -12,7 +12,7 @@ class Environment(str, Enum):
 
 
 class AppSettings(BaseSettings):
-    app_name:    str  = Field("doresh_backend",  validation_alias="APP_NAME")
+    app_name:    str  = Field("Doresh APP",  validation_alias="APP_NAME")
     app_version: str  = Field("1.0.0",           validation_alias="APP_VERSION")
     app_host:    str  = Field("0.0.0.0",          validation_alias="APP_HOST")
     app_port:    int  = Field(8000,              validation_alias="APP_PORT")
