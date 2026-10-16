@@ -1,13 +1,14 @@
 import secrets
+from uuid import UUID
 from functools import wraps
 from jwt import ExpiredSignatureError, InvalidTokenError
 from fastapi import Depends, Request, HTTPException, status
 
-from src.common.authentication import decode_token
-from src.settings import get_settings
+from src.common.authentication import decode_token, ACCESS_TOKEN_TYPE
+from src.infrastructure.repositories.app_repository import AppRepository
 from src.infrastructure.repositories.redis_repository import RedisRepository
-
-SESSION_BLACKLIST_PREFIX = "session_blacklist:"
+from src.application.use_cases.sessions import SessionsUseCase
+from src.settings import get_settings
 
 
 def api_key_required(func):
@@ -39,36 +40,52 @@ def api_key_required(func):
     return wrapper
 
 
+def _unauthorized(code: str) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail=code,
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+def _parse_uuid(value) -> UUID | None:
+    try:
+        return UUID(str(value))
+    except (TypeError, ValueError):
+        return None
+
+
 async def session_token_required(
     request: Request,
+    app_repository: AppRepository = Depends(),
     redis_repository: RedisRepository = Depends(),
 ) -> dict:
+    """
+    Validate the Bearer access token and that its login session is still active.
+    Returns the token payload; `sub` is the authenticated user id.
+    """
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing or invalid Authorization header",
-        )
-    token = auth_header.split(" ")[1]
+        raise _unauthorized("auth.missing_token")
+    token = auth_header.split(" ", 1)[1]
     try:
         payload = decode_token(token)
     except ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has expired",
-        )
-    except InvalidTokenError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid token: {exc}",
-        )
+        raise _unauthorized("auth.token_expired")
+    except InvalidTokenError:
+        raise _unauthorized("auth.invalid_token")
 
-    session_id = payload.get("session_id")
-    if session_id and await redis_repository.exists_key(f"{SESSION_BLACKLIST_PREFIX}{session_id}"):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Session has been logged out",
-        )
+    if payload.get("type") != ACCESS_TOKEN_TYPE:
+        raise _unauthorized("auth.invalid_token")
+
+    user_id    = _parse_uuid(payload.get("sub"))
+    session_id = _parse_uuid(payload.get("session_id"))
+    if user_id is None or session_id is None:
+        raise _unauthorized("auth.invalid_token")
+
+    sessions = SessionsUseCase(app_repository, redis_repository)
+    if not await sessions.is_session_active(user_id, session_id):
+        raise _unauthorized("auth.session_revoked")
 
     return payload
 

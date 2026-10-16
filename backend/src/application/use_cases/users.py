@@ -1,21 +1,42 @@
 import json
 import asyncio
 import logging
-from time import time
 from uuid import UUID
+from datetime import datetime, timedelta
 from fastapi import Response, status
 from src.infrastructure.repositories.app_repository import AppRepository
 from src.infrastructure.repositories.redis_repository import RedisRepository
-from src.schemas.users_schemas import PostRegisterUserSchema, PostAuthenticateUserSchema
-from src.common.authentication import hash_password, verify_password, generate_tokens
-from src.common.utilities import serialize, get_future_date, generate_verification_code
+from src.infrastructure.repositories.users_repository import RefreshOutcome
+from src.schemas.users_schemas import (
+    PostRegisterUserSchema,
+    PostAuthenticateUserSchema,
+    RefreshTokenRequest,
+    RefreshTokenResponse,
+)
+from src.common.authentication import (
+    hash_password,
+    verify_password,
+    generate_tokens,
+    generate_refresh_token,
+    hash_refresh_token,
+    REFRESH_TOKEN_EXPIRE_DAYS,
+)
+from src.common.utilities import serialize, get_future_date, generate_verification_code, set_local_time
+from src.application.use_cases.sessions import SessionsUseCase
 from src.common.email_templates import template_email_confirmation
 from src.application.use_cases.email import EmailService
-from src.common.decorators import SESSION_BLACKLIST_PREFIX
-from src.settings import get_settings
 from src.exceptions import NotFoundException, UnauthorizedException
 
 _logger = logging.getLogger(__name__)
+
+REFRESH_TOKEN_EXPIRES_IN = REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+SESSION_SECRET_FIELDS    = ("refresh_token_hash", "previous_refresh_token_hash")
+
+
+def _new_refresh_token() -> tuple[str, str, datetime]:
+    refresh_token = generate_refresh_token()
+    expires_at    = set_local_time() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    return refresh_token, hash_refresh_token(refresh_token), expires_at
 
 
 class UsersUseCase:
@@ -80,29 +101,58 @@ class UsersUseCase:
         if not db_user or not verify_password(data.password, db_user.password):
             raise UnauthorizedException("Invalid credentials")
 
-        user_session = await self.repository.users.register_user_session(db_user.id)
+        refresh_token, refresh_hash, refresh_expires_at = _new_refresh_token()
+        user_session = await self.repository.users.register_user_session(
+            db_user.id, refresh_hash, refresh_expires_at
+        )
         access_token = generate_tokens(db_user.id, user_session.id)
         response_data = serialize({
-            "message":    "User authenticated successfully",
-            "token":      access_token.access_token,
-            "expires_at": access_token.expires_on,
+            "message":            "User authenticated successfully",
+            "token":              access_token.access_token,
+            "expires_at":         access_token.expires_on,
+            "refresh_token":      refresh_token,
+            "refresh_expires_at": REFRESH_TOKEN_EXPIRES_IN,
         })
         return Response(status_code=status.HTTP_200_OK, content=json.dumps(response_data))
 
+    async def refresh_session(self, data: RefreshTokenRequest) -> RefreshTokenResponse:
+        new_refresh_token, new_refresh_hash, new_refresh_expires_at = _new_refresh_token()
+        outcome, session = await self.repository.users.rotate_refresh_token(
+            hash_refresh_token(data.refresh_token),
+            new_refresh_hash,
+            new_refresh_expires_at,
+        )
+
+        if outcome is RefreshOutcome.REUSED:
+            _logger.warning("Refresh token reuse detected; session %s revoked", session.id)
+            await SessionsUseCase(self.repository, self.redis_repository).mark_revoked(
+                session.user_id, session.id
+            )
+
+        if outcome is not RefreshOutcome.ROTATED:
+            raise UnauthorizedException("auth.invalid_refresh_token")
+
+        access_token = generate_tokens(session.user_id, session.id)
+        return RefreshTokenResponse(
+            message="Session refreshed successfully",
+            token=access_token.access_token,
+            expires_at=access_token.expires_on,
+            refresh_token=new_refresh_token,
+            refresh_expires_at=REFRESH_TOKEN_EXPIRES_IN,
+        )
+
     async def logout_user(self, payload_token: dict) -> Response:
-        session_id = payload_token.get("session_id")
-        session    = await self.repository.users.logout_session(session_id)
+        user_id    = UUID(payload_token["sub"])
+        session_id = UUID(payload_token["session_id"])
+        session    = await self.repository.users.logout_session(user_id, session_id)
         if not session:
             raise NotFoundException("Session not found")
+        await SessionsUseCase(self.repository, self.redis_repository).mark_revoked(user_id, session_id)
 
-        # Revoga o access token imediatamente: sem isso ele continuaria válido até expirar.
-        ttl_seconds = max(int(payload_token.get("exp", 0) - time()), 1) if payload_token.get("exp") else (
-            get_settings().auth_settings.access_token_expire_minutes * 60
-        )
-        await self.redis_repository.insert_key_ttl(
-            f"{SESSION_BLACKLIST_PREFIX}{session_id}", "1", ttl_seconds
-        )
-        response_data = {"message": "User logged out successfully", "session": serialize(session)}
+        session_data = {
+            key: value for key, value in serialize(session).items() if key not in SESSION_SECRET_FIELDS
+        }
+        response_data = {"message": "User logged out successfully", "session": session_data}
         return Response(status_code=status.HTTP_200_OK, content=json.dumps(response_data))
 
     async def user_profile(self, payload_token: dict) -> Response:

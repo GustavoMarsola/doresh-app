@@ -1,5 +1,6 @@
 import jwt
 import uuid
+import hashlib
 import secrets
 from datetime import timedelta, datetime, timezone
 from passlib.context import CryptContext
@@ -12,6 +13,8 @@ SECRET_KEY                  = get_settings().auth_settings.secret_key
 ALGORITHM                   = get_settings().auth_settings.algorithm
 ACCESS_TOKEN_EXPIRE_MINUTES = get_settings().auth_settings.access_token_expire_minutes
 EMAIL_TOKEN_EXPIRE_MINUTES  = get_settings().auth_settings.email_token_expire_minutes
+REFRESH_TOKEN_EXPIRE_DAYS   = get_settings().auth_settings.refresh_token_expire_days
+ACCESS_TOKEN_TYPE           = "access"
 PWD_CONTEXT                 = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
@@ -33,7 +36,7 @@ def generate_tokens(
         "sub":        str(user_id),
         "session_id": str(session_id) if session_id else None,
         "exp":        now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
-        "type":       "access",
+        "type":       ACCESS_TOKEN_TYPE,
     }
     access_token = jwt.encode(access_payload, SECRET_KEY, algorithm=ALGORITHM)
     expires_on   = ACCESS_TOKEN_EXPIRE_MINUTES * 60
@@ -71,6 +74,15 @@ def get_user_id_from_token(token: str) -> uuid.UUID | None:
         return uuid.UUID(payload.get("sub"))
     except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
         return None
+
+
+def generate_refresh_token() -> str:
+    """Opaque refresh token handed to the client once; only its hash is stored."""
+    return secrets.token_urlsafe(48)
+
+
+def hash_refresh_token(refresh_token: str) -> str:
+    return hashlib.sha256(refresh_token.encode("utf-8")).hexdigest()
 
 
 def generate_email_token() -> str:
