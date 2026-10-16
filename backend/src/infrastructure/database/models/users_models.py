@@ -57,3 +57,8 @@ class SessionsModel(EntityModel):
     ip_address: Mapped[str]       = mapped_column(nullable=True)
     logout_at:  Mapped[datetime]  = mapped_column(nullable=True)
     message:    Mapped[str]       = mapped_column(nullable=True)
+
+    refresh_token_hash:          Mapped[str]      = mapped_column(nullable=True, unique=True)
+    previous_refresh_token_hash: Mapped[str]      = mapped_column(nullable=True, index=True)
+    refresh_expires_at:          Mapped[datetime] = mapped_column(nullable=True)
+    refreshed_at:                Mapped[datetime] = mapped_column(nullable=True)
