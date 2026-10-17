@@ -2,7 +2,12 @@ from uuid import UUID
 from fastapi import APIRouter, Request, Response, status, Depends
 from src.infrastructure.repositories.app_repository import AppRepository
 from src.infrastructure.repositories.redis_repository import RedisRepository
-from src.schemas.users_schemas import PostRegisterUserSchema, PostAuthenticateUserSchema
+from src.schemas.users_schemas import (
+    PostRegisterUserSchema,
+    PostAuthenticateUserSchema,
+    RefreshTokenRequest,
+    RefreshTokenResponse,
+)
 from src.application.use_cases.users import UsersUseCase
 from src.common.decorators import session_token_required, api_key_required
 
@@ -40,6 +45,22 @@ async def post_authenticate_user(
     redis_repository: RedisRepository = Depends(),
 ) -> Response:
     return await UsersUseCase(app_repository, redis_repository).authenticate_user(data)
+
+
+@router.post(
+    path="/refresh",
+    status_code=status.HTTP_200_OK,
+    response_model=RefreshTokenResponse,
+    responses={status.HTTP_401_UNAUTHORIZED: {"description": "auth.invalid_refresh_token"}},
+)
+@api_key_required
+async def post_refresh_session(
+    request: Request,
+    data: RefreshTokenRequest,
+    app_repository: AppRepository = Depends(),
+    redis_repository: RedisRepository = Depends(),
+) -> RefreshTokenResponse:
+    return await UsersUseCase(app_repository, redis_repository).refresh_session(data)
 
 
 @router.get(path="/profile", status_code=status.HTTP_200_OK)

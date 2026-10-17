@@ -1,6 +1,6 @@
 from uuid     import UUID
 from typing   import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PostRegisterUserSchema(BaseModel):
@@ -30,3 +30,24 @@ class AuthenticateTokenSchema(BaseModel):
     access_token: str
     expires_on: int
 
+
+
+class RefreshTokenRequest(BaseModel):
+    """
+    Body of POST /user/refresh.
+    """
+    model_config = ConfigDict(extra="ignore")
+
+    refresh_token: str = Field(..., min_length=1, max_length=512)
+
+
+class RefreshTokenResponse(BaseModel):
+    """
+    New token pair issued by POST /user/refresh. Both expirations are lifetimes in seconds,
+    matching `expires_at` of /user/authenticate.
+    """
+    message:            str
+    token:              str
+    expires_at:         int
+    refresh_token:      str
+    refresh_expires_at: int

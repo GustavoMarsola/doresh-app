@@ -1,7 +1,8 @@
+from enum import Enum
 from uuid import UUID
-from datetime import date
+from datetime import date, datetime
 from fastapi import Depends
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.repositories import get_session_repo
 from src.infrastructure.database.models.users_models import (
@@ -13,6 +14,12 @@ from src.infrastructure.database.models.users_models import (
 from src.infrastructure.database.models.studies_models import StudyModel
 from src.infrastructure.database.models.bible_models import BibleHighlightsModel, BibleCommentsModel
 from src.common.utilities import set_local_time
+
+
+class RefreshOutcome(str, Enum):
+    ROTATED = "rotated"
+    REUSED  = "reused"
+    INVALID = "invalid"
 
 
 class UsersRepository:
@@ -73,23 +80,102 @@ class UsersRepository:
         result = await self.db_session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def register_user_session(self, user_id: UUID) -> SessionsModel:
-        session = SessionsModel(user_id=user_id)
+    async def register_user_session(
+        self,
+        user_id: UUID,
+        refresh_token_hash: str,
+        refresh_expires_at: datetime,
+    ) -> SessionsModel:
+        session = SessionsModel(
+            user_id=user_id,
+            refresh_token_hash=refresh_token_hash,
+            refresh_expires_at=refresh_expires_at,
+        )
         self.db_session.add(session)
         await self.db_session.commit()
         await self.db_session.refresh(session)
         return session
 
-    async def logout_session(self, session_id: UUID, message: str = "User logged out") -> SessionsModel | None:
-        stmt = select(SessionsModel).where(SessionsModel.id == session_id)
+    async def get_active_session(self, user_id: UUID, session_id: UUID) -> SessionsModel | None:
+        stmt = select(SessionsModel).where(
+            SessionsModel.id == session_id,
+            SessionsModel.user_id == user_id,
+            SessionsModel.logout_at.is_(None),
+        )
+        result = await self.db_session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def rotate_refresh_token(
+        self,
+        refresh_token_hash: str,
+        new_refresh_token_hash: str,
+        new_refresh_expires_at: datetime,
+    ) -> tuple["RefreshOutcome", SessionsModel | None]:
+        """
+        Swap the session's current refresh token for a new one under a row lock.
+        A token that matches the previous (already rotated) hash revokes the whole session.
+        """
+        stmt = (
+            select(SessionsModel)
+            .where(
+                or_(
+                    SessionsModel.refresh_token_hash == refresh_token_hash,
+                    SessionsModel.previous_refresh_token_hash == refresh_token_hash,
+                )
+            )
+            .with_for_update()
+        )
+        result  = await self.db_session.execute(stmt)
+        session = result.scalars().first()
+        now     = set_local_time()
+
+        if session is None or session.logout_at is not None:
+            await self.db_session.rollback()
+            return RefreshOutcome.INVALID, None
+
+        if session.refresh_token_hash != refresh_token_hash:
+            self._revoke(session, "Refresh token reuse detected", now)
+            await self.db_session.commit()
+            await self.db_session.refresh(session)
+            return RefreshOutcome.REUSED, session
+
+        if session.refresh_expires_at is None or session.refresh_expires_at <= now:
+            await self.db_session.rollback()
+            return RefreshOutcome.INVALID, None
+
+        session.previous_refresh_token_hash = refresh_token_hash
+        session.refresh_token_hash          = new_refresh_token_hash
+        session.refresh_expires_at          = new_refresh_expires_at
+        session.refreshed_at                = now
+        await self.db_session.commit()
+        await self.db_session.refresh(session)
+        return RefreshOutcome.ROTATED, session
+
+    async def logout_session(
+        self,
+        user_id: UUID,
+        session_id: UUID,
+        message: str = "User logged out",
+    ) -> SessionsModel | None:
+        stmt = select(SessionsModel).where(
+            SessionsModel.id == session_id,
+            SessionsModel.user_id == user_id,
+        )
         result = await self.db_session.execute(stmt)
         session = result.scalar_one_or_none()
-        if session:
-            session.message = message
-            session.logout_at = set_local_time()
+        if session and session.logout_at is None:
+            self._revoke(session, message, set_local_time())
             await self.db_session.commit()
             await self.db_session.refresh(session)
         return session
+
+    @staticmethod
+    def _revoke(session: SessionsModel, message: str, now: datetime) -> None:
+        session.message                     = message
+        session.logout_at                   = now
+        session.refresh_token_hash          = None
+        session.previous_refresh_token_hash = None
+        session.refresh_expires_at          = None
 
     async def get_user_address(self, user_id: str) -> AddressModel | None:
         stmt = (

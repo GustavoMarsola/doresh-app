@@ -31,6 +31,8 @@ class AuthSettings(BaseSettings):
     algorithm:                   str = Field(...,  validation_alias="JWT_ALGORITHM")
     access_token_expire_minutes: int = Field(120,  validation_alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     email_token_expire_minutes:  int = Field(240,  validation_alias="EMAIL_TOKEN_EXPIRE_MINUTES")
+    refresh_token_expire_days:   int = Field(30,   validation_alias="REFRESH_TOKEN_EXPIRE_DAYS")
+    session_cache_ttl_seconds:   int = Field(60,   validation_alias="SESSION_CACHE_TTL_SECONDS")
 
 
 class DatabaseSettings(BaseSettings):

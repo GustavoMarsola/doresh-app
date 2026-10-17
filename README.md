@@ -126,7 +126,7 @@ doresh-app/
 │
 ├── frontend/
 │   └── src/
-│       ├── pages/                     # LandingPage · Dashboard · ReadBible · CreateSermon …
+│       ├── pages/                     # Dashboard · ReadBible · CreateSermon …
 │       ├── components/                # ui/ (shadcn) · layout/ · auth/ · ai/
 │       ├── hooks/                     # ChatContext · use-mobile · use-toast
 │       └── services/                  # Clientes HTTP → /api/v1
@@ -157,9 +157,20 @@ Base: `/api/v1` · Docs interativas: `/api/docs`
 |---|---|---|---|
 | `POST` | `/register` | api-key | Cadastra usuário + envia e-mail de verificação |
 | `GET` | `/verify-email/{id}` | — | Confirma e-mail pelo código recebido |
-| `POST` | `/authenticate` | api-key | Login → retorna JWT |
+| `POST` | `/authenticate` | api-key | Login → retorna access token (JWT) e refresh token |
+| `POST` | `/refresh` | api-key | Troca o refresh token por um novo par (rotação; reuso revoga a sessão) |
 | `GET` | `/profile` | Bearer | Highlights e comentários do usuário |
-| `POST` | `/logout` | Bearer | Encerra a sessão |
+| `POST` | `/logout` | Bearer | Encerra a sessão e revoga o refresh token |
+
+Erros de autenticação (401, campo `detail`):
+
+| Código | Quando |
+|---|---|
+| `auth.missing_token` | Sem header `Authorization: Bearer` |
+| `auth.token_expired` | Access token expirado (use `/refresh`) |
+| `auth.invalid_token` | Assinatura inválida, tipo diferente de `access` ou claims ausentes |
+| `auth.session_revoked` | Sessão encerrada (logout ou reuso de refresh token) ou inexistente |
+| `auth.invalid_refresh_token` | Refresh token inválido, expirado, já usado ou de sessão encerrada |
 
 #### Estudos — `/api/v1`
 
@@ -199,6 +210,11 @@ Copie `.env.example` para `.env` e preencha:
 # Obrigatórias para funcionar
 X_API_KEY=           # chave para os endpoints públicos
 JWT_SECRET_KEY=      # segredo para assinar os tokens
+
+# Sessão (opcionais, com padrão)
+ACCESS_TOKEN_EXPIRE_MINUTES=120   # validade do access token
+REFRESH_TOKEN_EXPIRE_DAYS=30      # validade do refresh token (renovada a cada /refresh)
+SESSION_CACHE_TTL_SECONDS=60      # cache no Redis do estado "sessão ativa"
 
 # Banco de dados (sobrescrito automaticamente pelo docker compose)
 DATABASE_NAME=doresh

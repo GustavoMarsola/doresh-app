@@ -17,6 +17,9 @@ class RedisRepository:
     async def insert_key_ttl(self, key: str, value, time_in_seconds: int):
         return await self._conn.set(name=key, ex=time_in_seconds, value=value)
 
+    async def insert_key_ttl_if_absent(self, key: str, value, time_in_seconds: int):
+        return await self._conn.set(name=key, ex=time_in_seconds, value=value, nx=True)
+
     async def exists_key(self, key: str):
         exists = await self._conn.exists(key)
         return bool(exists) if exists else None
