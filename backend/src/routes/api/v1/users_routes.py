@@ -1,4 +1,5 @@
 from uuid import UUID
+from typing import Literal
 from fastapi import APIRouter, Request, Response, status, Depends
 from src.infrastructure.repositories.app_repository import AppRepository
 from src.infrastructure.repositories.redis_repository import RedisRepository
@@ -74,11 +75,12 @@ async def post_refresh_session(
 @router.get(path="/profile", status_code=status.HTTP_200_OK)
 async def get_user_profile(
     request: Request,
+    version: Literal["nvi", "ara"] = "nvi",
     payload_token: dict = Depends(session_token_required),
     app_repository: AppRepository = Depends(),
     redis_repository: RedisRepository = Depends(),
 ) -> Response:
-    return await UsersUseCase(app_repository, redis_repository).user_profile(payload_token)
+    return await UsersUseCase(app_repository, redis_repository).user_profile(payload_token, version)
 
 
 @router.post(path="/logout", status_code=status.HTTP_200_OK)

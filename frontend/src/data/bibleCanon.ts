@@ -65,3 +65,26 @@ export function nextPassage({ book, chapter }: Passage): Passage | null {
 /** Remove acentos e caixa, para a busca de livros ("genesis" encontra "Gênesis"). */
 export const normalizeBookName = (value: string) =>
   value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
+/** Chave do livro gravada pela API em grifos e comentários: "1 Coríntios" → "1_corintios". */
+export const bookSlug = (name: string) => normalizeBookName(name).replace(/ /g, '_');
+
+export const findBookBySlug = (slug: string) => BIBLE_BOOKS.find((b) => bookSlug(b.name) === slug);
+
+/** "João 3:14–15" ou "João 3:3, 5, 7–9". */
+export const formatReference = (book: string, chapter: number, verses: number[]) => {
+  const sorted = [...verses].sort((a, b) => a - b);
+  const ranges: string[] = [];
+  let start = sorted[0];
+  let prev = sorted[0];
+  for (const v of sorted.slice(1).concat(Number.NaN)) {
+    if (v === prev + 1) {
+      prev = v;
+      continue;
+    }
+    ranges.push(start === prev ? `${start}` : `${start}–${prev}`);
+    start = v;
+    prev = v;
+  }
+  return `${book} ${chapter}:${ranges.join(', ')}`;
+};

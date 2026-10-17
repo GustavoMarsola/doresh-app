@@ -198,8 +198,14 @@ Erros de autenticação (401, campo `detail`):
 | Método | Rota | Auth | Descrição |
 |---|---|---|---|
 | `GET` | `/book` | — | Conteúdo de um livro (NVI ou ARA) |
-| `POST` | `/highlight` | Bearer | Salva um versículo destacado |
-| `POST` | `/comment` | Bearer | Salva um comentário sobre um trecho |
+| `GET` | `/highlights?book=&chapter=` | Bearer | Grifos do usuário num capítulo |
+| `PUT` | `/highlights` | Bearer | Grifa versículos (`book`, `chapter`, `verses`, `color`); troca a cor dos já grifados |
+| `DELETE` | `/highlights?book=&chapter=&verses=` | Bearer | Remove grifos de versículos |
+| `GET` | `/comments?book=&chapter=` | Bearer | Comentários do usuário num capítulo |
+| `POST` | `/comments` | Bearer | Comenta um intervalo (`book`, `chapter`, `verse_start`, `verse_end`, `comment`) |
+| `DELETE` | `/comments/{id}` | Bearer | Remove um comentário |
+
+Grifos e comentários guardam só a referência: `book` é o slug do livro (`"1 Coríntios"` → `1_corintios`), sem cópia do texto bíblico. Referência inexistente → `422 bible.invalid_reference`.
 
 ---
 

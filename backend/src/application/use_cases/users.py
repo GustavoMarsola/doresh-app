@@ -21,6 +21,7 @@ from src.common.authentication import (
     hash_refresh_token,
     REFRESH_TOKEN_EXPIRE_DAYS,
 )
+from src.common.bible.helpers import get_verse_text
 from src.common.utilities import serialize, get_future_date, generate_verification_code, set_local_time
 from src.application.use_cases.sessions import SessionsUseCase
 from src.common.email_templates import template_email_confirmation
@@ -161,12 +162,16 @@ class UsersUseCase:
         response_data = {"message": "User logged out successfully", "session": session_data}
         return Response(status_code=status.HTTP_200_OK, content=json.dumps(response_data))
 
-    async def user_profile(self, payload_token: dict) -> Response:
+    async def user_profile(self, payload_token: dict, version: str = "nvi") -> Response:
         user_id = payload_token.get("sub")
         if not user_id:
             raise UnauthorizedException("Unauthorized. Try to login again.")
         highlights = await self.repository.users.get_user_highlights(user_id)
         comments   = await self.repository.users.get_user_comments(user_id)
+        highlights = [
+            {**serialize(h), "text": get_verse_text(h.book, h.chapter, h.verse, version)}
+            for h in highlights
+        ]
         response   = serialize({
             "message":    "User profile retrieved successfully",
             "user_id":    user_id,

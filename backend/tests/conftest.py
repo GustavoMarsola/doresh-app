@@ -6,12 +6,13 @@ The environment is configured *before* anything from `src` is imported, because
 `TEST_*` variables in this one place; the dev `.env` is never used.
 
 Postgres: a dedicated database whose name must contain "test" on a local/CI host
-(created if missing, schema via `create_all` until Alembic is adopted).
+(created if missing, schema rebuilt from the Alembic migrations at session start).
 Redis: the configured server, but a dedicated logical database (`TEST_REDIS_DB`, default 15)
 injected through a dependency override, flushed at session start and end.
 """
 import os
 import uuid
+from pathlib import Path
 from dataclasses import dataclass
 
 import pytest
@@ -65,6 +66,8 @@ os.environ.update({
 })
 
 import httpx  # noqa: E402
+from alembic import command  # noqa: E402
+from alembic.config import Config  # noqa: E402
 import psycopg2  # noqa: E402
 from psycopg2 import sql  # noqa: E402
 from redis.asyncio import Redis  # noqa: E402
@@ -94,6 +97,28 @@ def _ensure_test_database() -> None:
         conn.close()
 
 
+def _migrate_test_database() -> None:
+    """Drop everything and rebuild the schema with `alembic upgrade head`, so tests also cover the migrations."""
+    conn = psycopg2.connect(
+        host=TEST_DB_HOST, port=TEST_DB_PORT, user=TEST_DB_USER,
+        password=TEST_DB_PASSWORD, dbname=TEST_DB_NAME,
+    )
+    conn.autocommit = True
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+    finally:
+        conn.close()
+
+    # No ini file: alembic.ini's logging config would replace the app's loggers.
+    # The URL comes from src.settings, already pointing at the test database.
+    config = Config()
+    config.set_main_option(
+        "script_location", str(Path(__file__).parent.parent / "src/infrastructure/database/migrations")
+    )
+    command.upgrade(config, "head")
+
+
 async def _truncate_all_tables() -> None:
     tables = ", ".join(f'"{t.name}"' for t in EntityModel.metadata.sorted_tables)
     async with async_engine.begin() as conn:
@@ -104,9 +129,7 @@ async def _truncate_all_tables() -> None:
 async def test_database():
     """Create the test database and schema, and clean it at session start (crashed runs) and end."""
     _ensure_test_database()
-    async with async_engine.begin() as conn:
-        await conn.run_sync(EntityModel.metadata.create_all)
-    await _truncate_all_tables()
+    _migrate_test_database()
     yield
     await _truncate_all_tables()
     await async_engine.dispose()
@@ -126,6 +149,14 @@ async def test_redis():
     app.dependency_overrides.pop(get_redis_repo, None)
     await client.flushdb()
     await client.aclose()
+
+
+@pytest.fixture(autouse=True)
+async def reset_rate_limits(test_redis):
+    """Every test logs in from the same client IP; reset the per-IP attempt counters between tests."""
+    keys = [key async for key in test_redis.scan_iter("rate_limit:*")]
+    if keys:
+        await test_redis.delete(*keys)
 
 
 @dataclass(frozen=True)
@@ -165,6 +196,33 @@ def make_user():
 @pytest.fixture
 async def user_a(make_user) -> TestUser:
     return await make_user()
+
+
+@pytest.fixture
+async def user_b(make_user) -> TestUser:
+    return await make_user()
+
+
+@pytest.fixture
+async def client_as():
+    """Factory: an authenticated client (x-api-key + Bearer of a fresh login) for a test user."""
+    clients: list[httpx.AsyncClient] = []
+
+    async def _client_as(user: TestUser) -> httpx.AsyncClient:
+        client = httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test", headers={"x-api-key": TEST_API_KEY}
+        )
+        clients.append(client)
+        response = await client.post(
+            "/api/v1/user/authenticate", json={"email": user.email, "password": user.password}
+        )
+        assert response.status_code == 200, response.text
+        client.headers["Authorization"] = f"Bearer {response.json()['token']}"
+        return client
+
+    yield _client_as
+    for client in clients:
+        await client.aclose()
 
 
 @pytest.fixture

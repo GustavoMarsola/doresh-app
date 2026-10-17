@@ -20,7 +20,9 @@ import {
 	BIBLE_VERSIONS,
 	type BibleVersion,
 	type Passage,
+	bookSlug,
 	findBook,
+	formatReference,
 	nextPassage,
 	previousPassage,
 } from '@/data/bibleCanon';
@@ -45,23 +47,22 @@ const HIGHLIGHT_CLASSES: Record<string, string> = {
 	red: 'bg-highlight-red',
 };
 
-interface ProfileHighlight {
+interface Highlight {
 	id: string;
-	text: string;
+	book: string;
+	chapter: number;
+	verse: number;
 	color: string;
-	created_at: string;
 }
 
-interface ProfileComment {
+interface VerseComment {
 	id: string;
-	biblical_text: string;
+	book: string;
+	chapter: number;
+	verse_start: number;
+	verse_end: number;
 	comment: string;
 	created_at: string;
-}
-
-interface UserProfile {
-	highlights: ProfileHighlight[];
-	comments: ProfileComment[];
 }
 
 const readStorage = (key: string) => {
@@ -80,34 +81,6 @@ const writeStorage = (key: string, value: string) => {
 	}
 };
 
-const verseKey = (book: string, chapter: number, verse: number) => `${book}|${chapter}|${verse}`;
-
-/** Linhas no formato "Livro C:V - texto", como o leitor envia ao salvar grifos e comentários. */
-const parseVerseLines = (text: string) =>
-	text
-		.split('\n')
-		.map((line) => line.match(/^(.+?) (\d+):(\d+) - /))
-		.filter((m): m is RegExpMatchArray => m !== null)
-		.map((m) => ({ book: m[1], chapter: Number(m[2]), verse: Number(m[3]) }));
-
-/** "João 3:14–15" ou "João 3:3, 5, 7–9". */
-const formatReference = (book: string, chapter: number, verses: number[]) => {
-	const sorted = [...verses].sort((a, b) => a - b);
-	const ranges: string[] = [];
-	let start = sorted[0];
-	let prev = sorted[0];
-	for (const v of sorted.slice(1).concat(Number.NaN)) {
-		if (v === prev + 1) {
-			prev = v;
-			continue;
-		}
-		ranges.push(start === prev ? `${start}` : `${start}–${prev}`);
-		start = v;
-		prev = v;
-	}
-	return `${book} ${chapter}:${ranges.join(', ')}`;
-};
-
 const fetchBook = async (book: string, version: BibleVersion): Promise<string[][]> => {
 	const res = await authFetch(`${API}/bible/book?name=${encodeURIComponent(book)}&version=${version}`);
 	if (!res.ok) throw new Error('Não foi possível carregar o livro.');
@@ -115,22 +88,24 @@ const fetchBook = async (book: string, version: BibleVersion): Promise<string[][
 	return data.chapters;
 };
 
-const fetchProfile = async (): Promise<UserProfile> => {
-	const res = await authFetch(`${API}/user/profile`);
-	if (!res.ok) throw new Error('Não foi possível carregar seus grifos.');
-	const data = await res.json();
-	return { highlights: data.highlights ?? [], comments: data.comments ?? [] };
+const getJson = async <T,>(path: string, errorMessage: string): Promise<T> => {
+	const res = await authFetch(`${API}${path}`);
+	if (!res.ok) throw new Error(errorMessage);
+	return res.json();
 };
 
-const postJson = async (path: string, body: unknown) => {
+const sendJson = async (method: 'POST' | 'PUT' | 'DELETE', path: string, body?: unknown) => {
 	const res = await authFetch(`${API}${path}`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(body),
+		method,
+		headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+		body: body === undefined ? undefined : JSON.stringify(body),
 	});
 	if (!res.ok) throw new Error('request-failed');
 	return res.json();
 };
+
+const passageQuery = (book: string, chapter: number) =>
+	`book=${encodeURIComponent(bookSlug(book))}&chapter=${chapter}`;
 
 function usePassage() {
 	const [params, setParams] = useSearchParams();
@@ -192,9 +167,23 @@ export const ReadBible: React.FC = () => {
 		retry: 1,
 	});
 
-	const profileQuery = useQuery({
-		queryKey: ['user', 'profile'],
-		queryFn: fetchProfile,
+	const highlightsKey = ['bible', 'highlights', book, chapter];
+	const highlightsQuery = useQuery({
+		queryKey: highlightsKey,
+		queryFn: () =>
+			getJson<{ highlights: Highlight[] }>(`/bible/highlights?${passageQuery(book, chapter)}`, 'Não foi possível carregar seus grifos.').then(
+				(data) => data.highlights,
+			),
+		staleTime: 60 * 1000,
+	});
+
+	const commentsKey = ['bible', 'comments', book, chapter];
+	const commentsQuery = useQuery({
+		queryKey: commentsKey,
+		queryFn: () =>
+			getJson<{ comments: VerseComment[] }>(`/bible/comments?${passageQuery(book, chapter)}`, 'Não foi possível carregar seus comentários.').then(
+				(data) => data.comments,
+			),
 		staleTime: 60 * 1000,
 	});
 
@@ -215,30 +204,17 @@ export const ReadBible: React.FC = () => {
 		};
 	}, [selected.length]);
 
-	const { highlights, comments } = React.useMemo(() => {
-		const highlights = new Map<number, string>();
-		const comments = new Map<number, string[]>();
-		const profile = profileQuery.data;
-		if (!profile) return { highlights, comments };
+	const highlights = React.useMemo(
+		() => new Map((highlightsQuery.data ?? []).map((h) => [h.verse, h.color])),
+		[highlightsQuery.data],
+	);
 
-		[...profile.highlights]
-			.sort((a, b) => a.created_at.localeCompare(b.created_at))
-			.forEach((h) =>
-				parseVerseLines(h.text).forEach((v) => {
-					if (v.book === book && v.chapter === chapter) highlights.set(v.verse, h.color);
-				}),
-			);
-
-		profile.comments.forEach((c) =>
-			parseVerseLines(c.biblical_text).forEach((v) => {
-				if (v.book === book && v.chapter === chapter) {
-					comments.set(v.verse, [...(comments.get(v.verse) ?? []), c.comment]);
-				}
-			}),
-		);
-
-		return { highlights, comments };
-	}, [profileQuery.data, book, chapter]);
+	// Cada comentário aparece uma vez, no último versículo do trecho comentado.
+	const comments = React.useMemo(() => {
+		const byVerse = new Map<number, VerseComment[]>();
+		(commentsQuery.data ?? []).forEach((c) => byVerse.set(c.verse_end, [...(byVerse.get(c.verse_end) ?? []), c]));
+		return byVerse;
+	}, [commentsQuery.data]);
 
 	const selectedText = () =>
 		[...selected]
@@ -249,39 +225,45 @@ export const ReadBible: React.FC = () => {
 	const reference = selected.length > 0 ? formatReference(book, chapter, selected) : '';
 
 	const highlightMutation = useMutation({
-		mutationFn: (vars: { color: HighlightColor; text: string }) => postJson('/bible/highlight', vars),
-		onMutate: async ({ color, text }) => {
-			await queryClient.cancelQueries({ queryKey: ['user', 'profile'] });
-			const previous = queryClient.getQueryData<UserProfile>(['user', 'profile']);
-			if (previous) {
-				queryClient.setQueryData<UserProfile>(['user', 'profile'], {
-					...previous,
-					highlights: [
-						...previous.highlights,
-						{ id: `tmp-${Date.now()}`, text, color, created_at: new Date().toISOString() },
-					],
-				});
-			}
+		mutationFn: ({ color, verses }: { color: HighlightColor | null; verses: number[] }) =>
+			color
+				? sendJson('PUT', '/bible/highlights', { book: bookSlug(book), chapter, verses, color })
+				: sendJson('DELETE', `/bible/highlights?${passageQuery(book, chapter)}${verses.map((v) => `&verses=${v}`).join('')}`),
+		onMutate: async ({ color, verses }) => {
+			await queryClient.cancelQueries({ queryKey: highlightsKey });
+			const previous = queryClient.getQueryData<Highlight[]>(highlightsKey);
+			const kept = (previous ?? []).filter((h) => !verses.includes(h.verse));
+			const added = color
+				? verses.map((verse) => ({ id: `tmp-${verse}`, book: bookSlug(book), chapter, verse, color }))
+				: [];
+			queryClient.setQueryData<Highlight[]>(highlightsKey, [...kept, ...added]);
 			setSelected([]);
 			return { previous };
 		},
-		onError: (_err, _vars, context) => {
-			if (context?.previous) queryClient.setQueryData(['user', 'profile'], context.previous);
+		onSuccess: (data: { highlights: Highlight[] }) => queryClient.setQueryData(highlightsKey, data.highlights),
+		onError: (_err, { color }, context) => {
+			queryClient.setQueryData(highlightsKey, context?.previous);
 			toast({
-				title: 'Não foi possível salvar o grifo',
+				title: color ? 'Não foi possível salvar o grifo' : 'Não foi possível remover o grifo',
 				description: 'Verifique sua conexão e tente novamente.',
 				variant: 'destructive',
 			});
 		},
-		onSettled: () => queryClient.invalidateQueries({ queryKey: ['user', 'profile'] }),
 	});
 
 	const commentMutation = useMutation({
-		mutationFn: (vars: { comment: string; biblical_text: string }) => postJson('/bible/comment', vars),
+		mutationFn: (comment: string) =>
+			sendJson('POST', '/bible/comments', {
+				book: bookSlug(book),
+				chapter,
+				verse_start: Math.min(...selected),
+				verse_end: Math.max(...selected),
+				comment,
+			}),
 		onSuccess: () => {
 			toast({ title: 'Comentário salvo', description: `Você pode revê-lo em ${reference}.` });
 			setSelected([]);
-			queryClient.invalidateQueries({ queryKey: ['user', 'profile'] });
+			queryClient.invalidateQueries({ queryKey: commentsKey });
 		},
 		onError: () =>
 			toast({
@@ -290,6 +272,8 @@ export const ReadBible: React.FC = () => {
 				variant: 'destructive',
 			}),
 	});
+
+	const selectedHighlighted = selected.filter((v) => highlights.has(v));
 
 	const toggleVerse = (verse: number) =>
 		setSelected((current) => (current.includes(verse) ? current.filter((v) => v !== verse) : [...current, verse]));
@@ -481,20 +465,24 @@ export const ReadBible: React.FC = () => {
 											<PopoverTrigger asChild>
 												<button
 													type="button"
-													aria-label={`Ver seu comentário em ${book} ${chapter}:${verse}`}
+													aria-label={`Ver seus comentários em ${book} ${chapter}:${verse}`}
 													className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-md bg-muted align-middle text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 												>
 													<MessageSquare className="h-3.5 w-3.5" />
 												</button>
 											</PopoverTrigger>
 											<PopoverContent className="w-80 rounded-xl">
-												<p className="mb-2 text-sm font-semibold">
-													{book} {chapter}:{verse}
-												</p>
-												<ul className="space-y-2">
-													{verseComments.map((c, i) => (
-														<li key={i} className="whitespace-pre-wrap text-sm text-foreground">
-															{c}
+												<ul className="space-y-3">
+													{verseComments.map((c) => (
+														<li key={c.id}>
+															<p className="mb-1 text-sm font-semibold">
+																{formatReference(
+																	book,
+																	chapter,
+																	Array.from({ length: c.verse_end - c.verse_start + 1 }, (_, i) => c.verse_start + i),
+																)}
+															</p>
+															<p className="whitespace-pre-wrap text-sm text-foreground">{c.comment}</p>
 														</li>
 													))}
 												</ul>
@@ -530,10 +518,15 @@ export const ReadBible: React.FC = () => {
 					reference={reference}
 					count={selected.length}
 					onClose={() => setSelected([])}
-					onHighlight={(color) => highlightMutation.mutate({ color, text: selectedText() })}
+					onHighlight={(color) => highlightMutation.mutate({ color, verses: selected })}
+					onRemoveHighlight={
+						selectedHighlighted.length > 0
+							? () => highlightMutation.mutate({ color: null, verses: selectedHighlighted })
+							: undefined
+					}
 					onCopy={copySelection}
 					onAskRuach={FEATURES.ruach ? askRuach : undefined}
-					onSaveComment={(comment) => commentMutation.mutate({ comment, biblical_text: selectedText() })}
+					onSaveComment={(comment) => commentMutation.mutate(comment)}
 					savingComment={commentMutation.isPending}
 				/>
 			)}

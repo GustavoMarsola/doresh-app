@@ -3,20 +3,77 @@ import { Link } from "react-router-dom";
 import { PlusCircle, BookOpen, ScrollText, MessageSquare, Highlighter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { authFetch } from '@/components/auth/utils';
+import { findBookBySlug, formatReference } from '@/data/bibleCanon';
 
 interface Highlight {
   id: string;
-  text: string;
+  book: string;
+  chapter: number;
+  verse: number;
   color: string;
-  created_at: string;
+  text: string | null;
+  updated_at: string;
 }
 
 interface Comment {
   id: string;
-  biblical_text: string;
+  book: string;
+  chapter: number;
+  verse_start: number;
+  verse_end: number;
   comment: string;
   created_at: string;
 }
+
+interface HighlightGroup {
+  key: string;
+  bookName: string;
+  chapter: number;
+  verses: number[];
+  texts: (string | null)[];
+  color: string;
+  updatedAt: string;
+}
+
+const bookName = (slug: string) => findBookBySlug(slug)?.name ?? slug;
+
+const readerLink = (slug: string, chapter: number) =>
+  `/ler?livro=${encodeURIComponent(bookName(slug))}&cap=${chapter}`;
+
+/** Junta versículos seguidos do mesmo capítulo e cor ("João 3:16–18"); os mais recentes primeiro. */
+const groupHighlights = (highlights: Highlight[]): HighlightGroup[] => {
+  const sorted = [...highlights].sort(
+    (a, b) => a.book.localeCompare(b.book) || a.chapter - b.chapter || a.verse - b.verse,
+  );
+  const groups: (HighlightGroup & { slug: string })[] = [];
+  for (const h of sorted) {
+    const last = groups[groups.length - 1];
+    if (last && last.slug === h.book && last.chapter === h.chapter && last.color === h.color && last.verses[last.verses.length - 1] === h.verse - 1) {
+      last.verses.push(h.verse);
+      last.texts.push(h.text);
+      if (h.updated_at > last.updatedAt) last.updatedAt = h.updated_at;
+    } else {
+      groups.push({ key: h.id, slug: h.book, bookName: bookName(h.book), chapter: h.chapter, verses: [h.verse], texts: [h.text], color: h.color, updatedAt: h.updated_at });
+    }
+  }
+  return groups.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+};
+
+/** Versão que a pessoa usou por último no leitor (o leitor guarda em doresh:last-passage). */
+const lastReaderVersion = () => {
+  try {
+    return JSON.parse(localStorage.getItem('doresh:last-passage') ?? 'null')?.version === 'ARA' ? 'ara' : 'nvi';
+  } catch {
+    return 'nvi';
+  }
+};
+
+const commentReference = (c: Comment) =>
+  formatReference(
+    bookName(c.book),
+    c.chapter,
+    Array.from({ length: c.verse_end - c.verse_start + 1 }, (_, i) => c.verse_start + i),
+  );
 
 interface UserData {
   highlights: Highlight[];
@@ -32,7 +89,7 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await authFetch(`${import.meta.env.VITE_API_HOST}/user/profile`);
+        const response = await authFetch(`${import.meta.env.VITE_API_HOST}/user/profile?version=${lastReaderVersion()}`);
         const data = await response.json();
         setUserData({ highlights: data.highlights, comments: data.comments });
       } catch (error) {
@@ -43,6 +100,8 @@ export const Dashboard: React.FC = () => {
     };
     fetchUserData();
   }, []);
+
+  const highlightGroups = React.useMemo(() => groupHighlights(userData?.highlights ?? []), [userData]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -116,25 +175,40 @@ export const Dashboard: React.FC = () => {
                   <Highlighter className="w-5 h-5 text-primary" />
                   <h3 className="text-lg font-semibold">Destaques</h3>
                 </div>
-                {userData.highlights.length === 0 ? (
+                {highlightGroups.length === 0 ? (
                   <p className="text-muted-foreground text-sm">Nenhum destaque criado.</p>
                 ) : (
                   <>
                     <ul className="space-y-2">
-                      {userData.highlights.slice(0, visibleHighlights).map((h) => (
-                        <li
-                          key={h.id}
-                          className={`p-3 rounded-md border-l-4 ${
-                            h.color === "red"
-                              ? "border-red-500 bg-red-50"
-                              : "border-primary bg-primary/5"
-                          }`}
-                        >
-                          <p className="text-lg">{h.text}</p>
+                      {highlightGroups.slice(0, visibleHighlights).map((h) => (
+                        <li key={h.key}>
+                          <Link
+                            to={`/ler?livro=${encodeURIComponent(h.bookName)}&cap=${h.chapter}`}
+                            className={`block p-3 rounded-md border-l-4 hover:bg-muted/60 transition-colors ${
+                              h.color === "red"
+                                ? "border-red-500 bg-red-50"
+                                : "border-primary bg-primary/5"
+                            }`}
+                          >
+                            <p className="text-sm font-semibold text-foreground">
+                              {formatReference(h.bookName, h.chapter, h.verses)}
+                              <span className="ml-1.5 font-normal text-muted-foreground">{lastReaderVersion().toUpperCase()}</span>
+                            </p>
+                            <p className="mt-1 font-crimson text-lg leading-relaxed text-foreground">
+                              {h.verses.map((verse, i) => (
+                                <React.Fragment key={verse}>
+                                  {h.verses.length > 1 && (
+                                    <sup className="mr-0.5 font-inter text-[0.6em] font-semibold text-primary">{verse}</sup>
+                                  )}
+                                  {h.texts[i]}{' '}
+                                </React.Fragment>
+                              ))}
+                            </p>
+                          </Link>
                         </li>
                       ))}
                     </ul>
-                    {visibleHighlights < userData.highlights.length && (
+                    {visibleHighlights < highlightGroups.length && (
                       <button
                         onClick={() => setVisibleHighlights((prev) => prev + 3)}
                         className="mt-2 text-sm text-primary hover:underline"
@@ -162,7 +236,9 @@ export const Dashboard: React.FC = () => {
                           key={c.id}
                           className="p-3 rounded-md bg-background border border-border"
                         >
-                          <p className="text-lg font-medium text-foreground">{c.biblical_text}</p>
+                          <Link to={readerLink(c.book, c.chapter)} className="text-lg font-medium text-foreground hover:underline">
+                            {commentReference(c)}
+                          </Link>
                           <p className="text-lg text-muted-foreground">{c.comment}</p>
                         </li>
                       ))}

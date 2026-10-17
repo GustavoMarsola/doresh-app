@@ -1,5 +1,5 @@
 import React from 'react';
-import { Copy, Loader2, MessageSquare, X } from 'lucide-react';
+import { Copy, Eraser, Loader2, MessageSquare, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,8 @@ interface VerseActionsProps {
   count: number;
   onClose: () => void;
   onHighlight: (color: HighlightColor) => void;
+  /** Presente quando algum versículo selecionado já está grifado. */
+  onRemoveHighlight?: () => void;
   onCopy: () => void;
   /** Omitido quando o Ruach está desligado. */
   onAskRuach?: () => void;
@@ -31,6 +33,7 @@ export const VerseActions: React.FC<VerseActionsProps> = ({
   count,
   onClose,
   onHighlight,
+  onRemoveHighlight,
   onCopy,
   onAskRuach,
   onSaveComment,
@@ -81,6 +84,16 @@ export const VerseActions: React.FC<VerseActionsProps> = ({
               {option.label}
             </button>
           ))}
+          {onRemoveHighlight && (
+            <button
+              type="button"
+              onClick={onRemoveHighlight}
+              className="flex h-16 flex-1 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-card text-[13px] font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-10 md:flex-none md:flex-row md:gap-2 md:rounded-lg md:px-3 md:text-sm"
+            >
+              <Eraser className="h-5 w-5 md:h-4 md:w-4" aria-hidden="true" />
+              Remover grifo
+            </button>
+          )}
         </div>
 
         <span className="mx-1.5 hidden h-6 w-px bg-border md:block" aria-hidden="true" />
