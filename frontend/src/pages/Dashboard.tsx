@@ -87,13 +87,13 @@ export const Dashboard: React.FC = () => {
           </Card>
         </Link>
 
-        <Link to="/criar">
+        <Link to="/estudos/novo">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-dashed border-primary/30 hover:border-primary/50">
             <CardContent className="flex flex-col items-center justify-center py-8">
               <PlusCircle className="w-12 h-12 text-primary mb-4" />
               <h3 className="text-lg font-semibold mb-2">Novo Estudo</h3>
               <p className="text-muted-foreground text-center">
-                Crie um estudo bíblico ou sermão
+                Comece um novo estudo da Palavra
               </p>
             </CardContent>
           </Card>

@@ -32,6 +32,17 @@ async def get_studies(
     return await StudiesUseCase(app_repository, redis_repository).get_user_studies(payload_token, params)
 
 
+@router.get(path="/study/{study_id}", status_code=status.HTTP_200_OK)
+async def get_study(
+    request: Request,
+    study_id: UUID,
+    payload_token: dict = Depends(session_token_required),
+    app_repository: AppRepository = Depends(),
+    redis_repository: RedisRepository = Depends(),
+) -> Response:
+    return await StudiesUseCase(app_repository, redis_repository).get_user_study(payload_token, study_id)
+
+
 @router.patch(path="/study", status_code=status.HTTP_200_OK)
 async def patch_study(
     request: Request,

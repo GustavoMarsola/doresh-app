@@ -1,346 +1,212 @@
 import React from 'react';
-import { Calendar, Tag, Search, SortDesc, Loader2, FileDown, Trash, Pencil, Eye } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { BookOpen, ExternalLink, FileDown, Loader2, MoreHorizontal, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { SermonType } from '@/types/sermon';
-import { authFetch } from '@/components/auth/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { exportSermonToPDF } from "@/components/utils"; 
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { AiBadge } from '@/components/studies/AiBadge';
+import { DeleteStudyDialog } from '@/components/studies/DeleteStudyDialog';
+import { exportStudyToPDF, formatReference, useStudies, type Study } from '@/lib/studies';
+
+const useDebounced = <T,>(value: T, delay: number) => {
+	const [debounced, setDebounced] = React.useState(value);
+	React.useEffect(() => {
+		const id = window.setTimeout(() => setDebounced(value), delay);
+		return () => window.clearTimeout(id);
+	}, [value, delay]);
+	return debounced;
+};
 
 export const Library: React.FC = () => {
-	const [searchTerm, setSearchTerm] = React.useState('');
-	const [sortBy, setSortBy] = React.useState<'date' | 'title'>('date');
-	const [sermons, setSermons] = React.useState<SermonType[]>([]);
-	const [loading, setLoading] = React.useState(true);
-	const [error, setError] = React.useState(false);
-	const [selectedSermon, setSelectedSermon] = React.useState<SermonType | null>(null);
-
-	const [sermonToDelete, setSermonToDelete] = React.useState<SermonType | null>(null);
-	const [deleting, setDeleting] = React.useState(false);
-
-	const token = localStorage.getItem("token");
-
-	const fetchSermons = async () => {
-		setLoading(true);
-		setError(false);
-		try {
-			const res = await authFetch(`${import.meta.env.VITE_API_HOST}/sermons`, {
-				headers: { Authorization: `Bearer ${token}` }
-			});
-			const data = await res.json();
-			setSermons(data.sermons);
-		} catch (err) {
-			console.error(err);
-			setError(true);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const handleDeleteSermon = async (id: string) => {
-		setDeleting(true);
-		try {
-			const res = await authFetch(`${import.meta.env.VITE_API_HOST}/sermon/${id}`, {
-				method: 'DELETE',
-				headers: { Authorization: `Bearer ${token}` }
-			});
-			if (!res.ok) throw new Error('Erro ao excluir');
-
-			// Remove o sermão da lista sem recarregar tudo
-			setSermons((prev) => prev.filter((s) => s.id !== id));
-			setSermonToDelete(null);
-		} catch (err) {
-			console.error(err);
-			alert('Erro ao excluir estudo. Tente novamente.');
-		} finally {
-			setDeleting(false);
-		}
-	};
+	const [params, setParams] = useSearchParams();
+	const [search, setSearch] = React.useState(params.get('q') ?? '');
+	const query = useDebounced(search, 300);
+	const [toDelete, setToDelete] = React.useState<Study | null>(null);
 
 	React.useEffect(() => {
-		fetchSermons();
-	}, []);
+		setParams(query.trim() ? { q: query.trim() } : {}, { replace: true });
+	}, [query, setParams]);
 
-	const filteredAndSortedSermons = sermons
-		.filter(sermon =>
-			sermon.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			sermon.bible_refs.toLowerCase().includes(searchTerm.toLowerCase())
-		)
-		.sort((a, b) => {
-			if (sortBy === "date") return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-			return a.title.localeCompare(b.title);
-		});
+	const studiesQuery = useStudies(query);
+	const studies = studiesQuery.data?.pages.flatMap((p) => p.studies) ?? [];
+	const total = studiesQuery.data?.pages[0]?.total ?? 0;
+	const searching = query.trim().length > 0;
+	const isNewUser = studiesQuery.isSuccess && total === 0 && !searching;
 
 	return (
-		<div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
-			{/* Header */}
-			<div className="text-center py-8">
-				<h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-					Biblioteca de Estudos
-				</h1>
-				<p className="text-muted-foreground">
-					Organize e gerencie todas suas mensagens
-				</p>
+		<div className="space-y-6">
+			<div className="flex flex-wrap items-end justify-between gap-4">
+				<div>
+					<h1 className="text-2xl font-bold text-foreground md:text-3xl">Meus estudos</h1>
+					<p className="mt-1 text-muted-foreground">Tudo o que você estudou na Palavra, num só lugar.</p>
+				</div>
+				<Button asChild>
+					<Link to="/estudos/novo">
+						<Plus className="h-4 w-4" />
+						Novo estudo
+					</Link>
+				</Button>
 			</div>
 
-			{/* Loading */}
-			{loading && (
-				<div className="flex justify-center items-center py-12">
-					<Loader2 className="w-8 h-8 text-primary animate-spin" />
+			{!isNewUser && (
+				<div className="flex flex-wrap items-center gap-3">
+					<div className="relative min-w-0 flex-1 basis-64">
+						<Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+						<Input
+							type="search"
+							aria-label="Buscar estudos"
+							placeholder="Buscar por título ou introdução"
+							value={search}
+							onChange={(e) => setSearch(e.target.value)}
+							className="h-11 rounded-xl bg-card pl-9"
+						/>
+					</div>
+					{studiesQuery.isSuccess && (
+						<p className="text-sm text-muted-foreground" aria-live="polite">
+							{total} {total === 1 ? 'estudo' : 'estudos'}
+							{searching && ' encontrados'}
+						</p>
+					)}
 				</div>
 			)}
 
-			{/* Error */}
-			{error && (
-				<Card>
-					<CardContent className="text-center py-8 space-y-4">
-						<p className="text-muted-foreground">Erro ao carregar estudos.</p>
-						<Button onClick={fetchSermons}>Tentar novamente</Button>
-					</CardContent>
-				</Card>
-			)}
-
-			{!loading && !error && (
-				<>
-					{/* Statistics */}
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-						<Card>
-							<CardContent className="text-center py-6">
-								<div className="text-2xl font-bold text-primary mb-1">
-									{sermons.length}
-								</div>
-								<div className="text-sm text-muted-foreground">
-									Total de Estudos
-								</div>
-							</CardContent>
-						</Card>
-						
-						<Card>
-							<CardContent className="text-center py-6">
-								<div className="text-2xl font-bold text-blue-500 mb-1">
-									{sermons.filter(s => new Date(s.updated_at).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000).length}
-								</div>
-								<div className="text-sm text-muted-foreground">
-									Últimos 7 dias
-								</div>
-							</CardContent>
-						</Card>
-						
-						<Card>
-							<CardContent className="text-center py-6">
-								<div className="text-2xl font-bold text-red-500 mb-1">
-									{sermons.filter(s => new Date(s.updated_at).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000).length}
-								</div>
-								<div className="text-sm text-muted-foreground">
-									Últimos 30 dias
-								</div>
-							</CardContent>
-						</Card>
-					</div>
-
-					{/* Filters */}
-					<Card>
-						<CardContent className="pt-6">
-							<div className="flex flex-col md:flex-row gap-4">
-								<div className="flex-1 relative">
-									<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-									<Input
-										placeholder="Buscar estudos..."
-										value={searchTerm}
-										onChange={(e) => setSearchTerm(e.target.value)}
-										className="pl-10"
-									/>
-								</div>
-								
-								<Select value={sortBy} onValueChange={(value: 'date' | 'title') => setSortBy(value)}>
-									<SelectTrigger className="w-full md:w-48">
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="date">
-											<div className="flex items-center gap-2">
-												<Calendar className="w-4 h-4" />
-												Por data
-											</div>
-										</SelectItem>
-										<SelectItem value="title">
-											<div className="flex items-center gap-2">
-												<SortDesc className="w-4 h-4" />
-												Por título
-											</div>
-										</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-						</CardContent>
-					</Card>
-					
-					{/* Sermons List */}
-					{filteredAndSortedSermons.length === 0 ? (
-						<Card>
-							<CardContent className="text-center py-8">
-								<p className="text-muted-foreground">
-									Nenhum estudo encontrado.
-								</p>
-							</CardContent>
-						</Card>
-					) : (
-						<div className="grid gap-4">
-							{filteredAndSortedSermons.map((sermon) => (
-								<Card key={sermon.id} className="hover:shadow-md transition-shadow">
-									<CardHeader>
-										<CardTitle className="flex items-start justify-between">
-											<div className="flex-1">
-												<button
-													onClick={() => setSelectedSermon(sermon)}
-													className="text-left text-lg font-semibold text-foreground hover:text-primary transition-colors mb-1 block"
-												>
-													{sermon.title}
-												</button>
-												<p className="text-sm text-primary font-medium">
-													{sermon.bible_refs}
-												</p>
-											</div>
-										</CardTitle>
-									</CardHeader>
-									<CardContent>
-										<p className="text-muted-foreground mb-4 line-clamp-2">
-											{sermon.introduction}
-										</p>
-										
-										<div className="flex items-center justify-between text-sm">
-											<div className="flex items-center gap-4 text-muted-foreground">
-												<span className="flex items-center gap-1">
-													<Calendar className="w-4 h-4" />
-													{new Date(sermon.updated_at).toLocaleDateString('pt-BR')}
-												</span>
-												<span className="flex items-center gap-1">
-													<Tag className="w-4 h-4" />
-													{sermon.developments.length} pontos
-												</span>
-											</div>
-											
-											<div className="flex gap-2">
-												<Button variant="outline" size="sm" onClick={() => setSelectedSermon(sermon)}>
-													<Eye className="w-4 h-4 mr-1" />
-													Visualizar
-												</Button>
-
-												{/* <Button variant="outline" size="sm" >
-													<Pencil className="w-4 h-4 mr-1" />
-														Editar
-												</Button> */}
-
-												<Button variant="outline" size="sm" onClick={() => exportSermonToPDF(sermon)}>
-													<FileDown className="w-4 h-4 mr-1" />
-														Baixar
-												</Button>
-
-												<Button
-													variant="destructive"
-													size="sm"
-													onClick={() => setSermonToDelete(sermon)}
-												>
-													<Trash className="w-4 h-4" />
-												</Button>
-											</div>
-										</div>
-									</CardContent>
-								</Card>
-							))}
+			{studiesQuery.isLoading && (
+				<div className="grid gap-4 md:grid-cols-2" aria-busy="true" aria-label="Carregando estudos">
+					{Array.from({ length: 4 }, (_, i) => (
+						<div key={i} className="space-y-3 rounded-2xl border border-border bg-card p-5">
+							<Skeleton className="h-5 w-3/4" />
+							<Skeleton className="h-4 w-1/3" />
+							<Skeleton className="h-4 w-full" />
+							<Skeleton className="h-4 w-2/3" />
 						</div>
-					)}
-				</>
+					))}
+				</div>
 			)}
 
-			{/* Dialog para Visualizar Sermão */}
-			<Dialog open={!!selectedSermon} onOpenChange={() => setSelectedSermon(null)}>
-  <DialogContent className="max-w-2xl">
-	{selectedSermon && (
-	  <>
-		<DialogHeader>
-    <DialogTitle>{selectedSermon.title}</DialogTitle>
-    <p className="text-sm text-primary">{selectedSermon.bible_refs}</p>
-    
-    <div className="flex space-x-2">
-      {/* Botão de download */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => exportSermonToPDF(selectedSermon)}
-      >
-        <FileDown className="w-4 h-4 mr-1" />
-        Baixar
-      </Button>
+			{studiesQuery.isError && (
+				<div className="rounded-2xl border border-border bg-card p-8 text-center">
+					<p className="font-medium text-foreground">Não foi possível carregar seus estudos.</p>
+					<p className="mt-1 text-sm text-muted-foreground">Verifique sua conexão e tente novamente.</p>
+					<Button className="mt-4" variant="outline" onClick={() => studiesQuery.refetch()}>
+						Tentar novamente
+					</Button>
+				</div>
+			)}
 
-      {/* <Button variant="outline" size="sm" >
-          <Pencil className="w-4 h-4 mr-1" />
-          Editar
-      </Button> */}
-    </div>
-</DialogHeader>
+			{isNewUser && (
+				<div className="flex flex-col items-center rounded-2xl border border-dashed border-border px-6 py-16 text-center">
+					<span className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+						<BookOpen className="h-7 w-7" />
+					</span>
+					<h2 className="text-lg font-semibold text-foreground">Seu primeiro estudo começa aqui</h2>
+					<p className="mt-1 max-w-sm text-muted-foreground">
+						Escolha uma passagem, organize a introdução, os pontos e a conclusão. Tudo é salvo automaticamente.
+					</p>
+					<Button asChild className="mt-6">
+						<Link to="/estudos/novo">
+							<Plus className="h-4 w-4" />
+							Criar primeiro estudo
+						</Link>
+					</Button>
+				</div>
+			)}
 
-		{/* This is the div you need to wrap the content and make scrollable */}
-		<div className="space-y-4 max-h-[70vh] overflow-y-auto pr-4"> 
-		  {/* Introdução */}
-		  <p className="text-muted-foreground">{selectedSermon.introduction}</p>
+			{studiesQuery.isSuccess && searching && total === 0 && (
+				<div className="rounded-2xl border border-border bg-card p-8 text-center">
+					<p className="font-medium text-foreground">Nenhum estudo encontrado para “{query.trim()}”.</p>
+					<Button className="mt-4" variant="outline" onClick={() => setSearch('')}>
+						<X className="h-4 w-4" />
+						Limpar busca
+					</Button>
+				</div>
+			)}
 
-		  {/* Desenvolvimento */}
-		  {selectedSermon.developments.map((dev, idx) => (
-			<div key={dev.id ?? idx} className="border-l-2 pl-3">
-			  <p className="font-medium">{dev.title}</p>
-			  <p className="text-sm text-muted-foreground">{dev.text}</p>
-			</div>
-		  ))}
+			{studies.length > 0 && (
+				<ul className="grid gap-4 md:grid-cols-2">
+					{studies.map((study) => (
+						<li key={study.id}>
+							<StudyCard study={study} onDelete={() => setToDelete(study)} />
+						</li>
+					))}
+				</ul>
+			)}
 
-		  {/* Conclusão */}
-		  {selectedSermon.conclusion && (
-			<div className="mt-4 border-t pt-4">
-			  <p className="font-medium">Conclusão</p>
-			  <p className="text-sm text-muted-foreground">{selectedSermon.conclusion}</p>
-			</div>
-		  )}
+			{studiesQuery.hasNextPage && (
+				<div className="flex justify-center">
+					<Button variant="outline" onClick={() => studiesQuery.fetchNextPage()} disabled={studiesQuery.isFetchingNextPage}>
+						{studiesQuery.isFetchingNextPage && <Loader2 className="h-4 w-4 animate-spin" />}
+						Carregar mais estudos
+					</Button>
+				</div>
+			)}
+
+			<DeleteStudyDialog study={toDelete} onOpenChange={(open) => !open && setToDelete(null)} />
 		</div>
-	  </>
-	)}
-  </DialogContent>
-</Dialog>
+	);
+};
 
-			{/* Dialog de Confirmação de Exclusão */}
-			<Dialog open={!!sermonToDelete} onOpenChange={() => setSermonToDelete(null)}>
-				<DialogContent className="max-w-md">
-					{sermonToDelete && (
-						<>
-							<DialogHeader>
-								<DialogTitle>Excluir estudo</DialogTitle>
-							</DialogHeader>
-							<p className="text-sm text-muted-foreground">
-								Tem certeza que deseja excluir <strong>{sermonToDelete.title}</strong>? 
-								Essa ação não poderá ser desfeita.
-							</p>
-							<div className="flex justify-end gap-2 mt-6">
-								<Button variant="outline" onClick={() => setSermonToDelete(null)}>
-									Cancelar
-								</Button>
-								<Button
-									variant="destructive"
-									onClick={() => handleDeleteSermon(sermonToDelete.id)}
-									disabled={deleting}
-								>
-									{deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Excluir'}
-								</Button>
-							</div>
-						</>
-					)}
-				</DialogContent>
-			</Dialog>
-		</div>
+const StudyCard: React.FC<{ study: Study; onDelete: () => void }> = ({ study, onDelete }) => {
+	const navigate = useNavigate();
+	const edited = formatDistanceToNow(new Date(study.updated_at), { addSuffix: true, locale: ptBR });
+	const points = study.sections.length;
+
+	return (
+		<article className="group relative flex h-full flex-col gap-2 rounded-2xl border border-border bg-card p-5 transition-colors hover:border-primary/60 focus-within:ring-2 focus-within:ring-ring">
+			<div className="flex items-start justify-between gap-3">
+				<div className="min-w-0 space-y-2">
+					{study.ai_generated && <AiBadge />}
+					<h2 className="line-clamp-2 text-lg font-semibold leading-snug text-foreground">
+						<Link to={`/estudos/${study.id}`} className="after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none">
+							{study.title}
+						</Link>
+					</h2>
+				</div>
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button variant="ghost" size="icon" className="relative z-10 -mr-2 -mt-1 h-10 w-10 shrink-0" aria-label={`Ações para ${study.title}`}>
+							<MoreHorizontal className="h-5 w-5" />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end" className="w-48">
+						<DropdownMenuItem onSelect={() => navigate(`/estudos/${study.id}`)}>
+							<ExternalLink className="h-4 w-4" />
+							Abrir
+						</DropdownMenuItem>
+						<DropdownMenuItem onSelect={() => navigate(`/estudos/${study.id}/editar`)}>
+							<Pencil className="h-4 w-4" />
+							Editar
+						</DropdownMenuItem>
+						<DropdownMenuItem onSelect={() => exportStudyToPDF(study)}>
+							<FileDown className="h-4 w-4" />
+							Baixar PDF
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem onSelect={onDelete} className="text-destructive focus:text-destructive">
+							<Trash2 className="h-4 w-4" />
+							Excluir
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</div>
+
+			{study.references.length > 0 && (
+				<p className="text-sm font-medium text-primary">{study.references.map(formatReference).join(' · ')}</p>
+			)}
+			{study.introduction.trim() && <p className="line-clamp-2 text-muted-foreground">{study.introduction}</p>}
+
+			<p className="mt-auto pt-2 text-sm text-muted-foreground">
+				Editado {edited}
+				{points > 0 && ` · ${points} ${points === 1 ? 'ponto' : 'pontos'}`}
+			</p>
+		</article>
 	);
 };

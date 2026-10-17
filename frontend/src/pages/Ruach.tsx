@@ -1,5 +1,6 @@
 import ReactMarkdown from 'react-markdown';
 import { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Send, Loader2 } from 'lucide-react';
 import { jwtDecode } from 'jwt-decode';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,9 @@ export const Ruach = () => {
   const token = localStorage.getItem('token');
   const decoded: any = jwtDecode(token);
   const sessionId = decoded.session_id;
-  const [message, setMessage] = useState('');
+  const location = useLocation();
+  const prefill = (location.state as { prefill?: string } | null)?.prefill;
+  const [message, setMessage] = useState(prefill ?? '');
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -42,6 +45,10 @@ export const Ruach = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    if (prefill) textareaRef.current?.focus();
+  }, [prefill]);
 
   const handleSendMessage = async () => {
     if (!message.trim()) return;
@@ -102,7 +109,7 @@ export const Ruach = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-background">
+    <div className="flex flex-col h-[calc(100dvh-6rem)] md:h-[100dvh] bg-background">
       {/* Header */}
       <div className="border-b bg-card px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center gap-3">

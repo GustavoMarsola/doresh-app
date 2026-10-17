@@ -1,0 +1,67 @@
+// Livros da Bíblia na ordem canônica protestante, com o número de capítulos.
+// Os nomes são os mesmos aceitos pela API (`/bible/book?name=`).
+
+export type Testament = 'AT' | 'NT';
+
+export interface BibleBook {
+  name: string;
+  chapters: number;
+  testament: Testament;
+}
+
+const OLD_TESTAMENT: [string, number][] = [
+  ['Gênesis', 50], ['Êxodo', 40], ['Levítico', 27], ['Números', 36], ['Deuteronômio', 34],
+  ['Josué', 24], ['Juízes', 21], ['Rute', 4], ['1 Samuel', 31], ['2 Samuel', 24],
+  ['1 Reis', 22], ['2 Reis', 25], ['1 Crônicas', 29], ['2 Crônicas', 36], ['Esdras', 10],
+  ['Neemias', 13], ['Ester', 10], ['Jó', 42], ['Salmos', 150], ['Provérbios', 31],
+  ['Eclesiastes', 12], ['Cantares', 8], ['Isaías', 66], ['Jeremias', 52], ['Lamentações', 5],
+  ['Ezequiel', 48], ['Daniel', 12], ['Oséias', 14], ['Joel', 3], ['Amós', 9],
+  ['Obadias', 1], ['Jonas', 4], ['Miqueias', 7], ['Naum', 3], ['Habacuque', 3],
+  ['Sofonias', 3], ['Ageu', 2], ['Zacarias', 14], ['Malaquias', 4],
+];
+
+const NEW_TESTAMENT: [string, number][] = [
+  ['Mateus', 28], ['Marcos', 16], ['Lucas', 24], ['João', 21], ['Atos', 28],
+  ['Romanos', 16], ['1 Coríntios', 16], ['2 Coríntios', 13], ['Gálatas', 6], ['Efésios', 6],
+  ['Filipenses', 4], ['Colossenses', 4], ['1 Tessalonicenses', 5], ['2 Tessalonicenses', 3],
+  ['1 Timóteo', 6], ['2 Timóteo', 4], ['Tito', 3], ['Filemom', 1], ['Hebreus', 13],
+  ['Tiago', 5], ['1 Pedro', 5], ['2 Pedro', 3], ['1 João', 5], ['2 João', 1],
+  ['3 João', 1], ['Judas', 1], ['Apocalipse', 22],
+];
+
+export const BIBLE_BOOKS: BibleBook[] = [
+  ...OLD_TESTAMENT.map(([name, chapters]) => ({ name, chapters, testament: 'AT' as const })),
+  ...NEW_TESTAMENT.map(([name, chapters]) => ({ name, chapters, testament: 'NT' as const })),
+];
+
+export const BIBLE_VERSIONS = ['ARA', 'NVI'] as const;
+export type BibleVersion = (typeof BIBLE_VERSIONS)[number];
+
+export const findBook = (name: string) => BIBLE_BOOKS.find((b) => b.name === name);
+
+export interface Passage {
+  book: string;
+  chapter: number;
+}
+
+/** Capítulo anterior, atravessando livros. `null` em Gênesis 1. */
+export function previousPassage({ book, chapter }: Passage): Passage | null {
+  if (chapter > 1) return { book, chapter: chapter - 1 };
+  const index = BIBLE_BOOKS.findIndex((b) => b.name === book);
+  if (index <= 0) return null;
+  const prev = BIBLE_BOOKS[index - 1];
+  return { book: prev.name, chapter: prev.chapters };
+}
+
+/** Próximo capítulo, atravessando livros. `null` em Apocalipse 22. */
+export function nextPassage({ book, chapter }: Passage): Passage | null {
+  const index = BIBLE_BOOKS.findIndex((b) => b.name === book);
+  if (index < 0) return null;
+  if (chapter < BIBLE_BOOKS[index].chapters) return { book, chapter: chapter + 1 };
+  const next = BIBLE_BOOKS[index + 1];
+  return next ? { book: next.name, chapter: 1 } : null;
+}
+
+/** Remove acentos e caixa, para a busca de livros ("genesis" encontra "Gênesis"). */
+export const normalizeBookName = (value: string) =>
+  value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
