@@ -123,7 +123,7 @@ doresh-app/
 │
 ├── frontend/
 │   └── src/
-│       ├── pages/                     # LandingPage · Dashboard · ReadBible · CreateSermon …
+│       ├── pages/                     # Dashboard · ReadBible · CreateSermon …
 │       ├── components/                # ui/ (shadcn) · layout/ · auth/ · ai/
 │       └── hooks/                     # ChatContext · use-mobile · use-toast
 │
@@ -201,9 +201,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES=120   # validade do access token
 REFRESH_TOKEN_EXPIRE_DAYS=30      # validade do refresh token (renovada a cada /refresh)
 SESSION_CACHE_TTL_SECONDS=60      # cache no Redis do estado "sessão ativa"
 
-# Banco de dados — aponte para um Postgres já em execução (não é subido pelo docker compose)
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
+# Banco de dados (sobrescrito automaticamente pelo docker compose)
 DATABASE_NAME=doresh
 DATABASE_USER=doresh
 DATABASE_PWD=doresh

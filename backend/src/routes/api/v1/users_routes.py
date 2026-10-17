@@ -58,7 +58,6 @@ async def post_authenticate_user(
 @router.post(
     path="/refresh",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(rate_limiter("refresh", max_attempts=30, window_seconds=60))],
     response_model=RefreshTokenResponse,
     responses={status.HTTP_401_UNAUTHORIZED: {"description": "auth.invalid_refresh_token"}},
 )

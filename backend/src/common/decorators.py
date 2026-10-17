@@ -3,6 +3,7 @@ from uuid import UUID
 from functools import wraps
 from jwt import ExpiredSignatureError, InvalidTokenError
 from fastapi import Depends, Request, HTTPException, status
+from fastapi.responses import JSONResponse
 
 from src.common.authentication import decode_token, ACCESS_TOKEN_TYPE
 from src.infrastructure.repositories.app_repository import AppRepository

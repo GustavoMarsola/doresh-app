@@ -31,6 +31,7 @@ class AuthenticateTokenSchema(BaseModel):
     expires_on: int
 
 
+
 class RefreshTokenRequest(BaseModel):
     """
     Body of POST /user/refresh.

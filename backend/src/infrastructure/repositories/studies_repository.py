@@ -1,6 +1,6 @@
 from uuid import UUID
 from fastapi import Depends
-from sqlalchemy import select, delete, asc, desc
+from sqlalchemy import select, delete, asc, desc, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.repositories import get_session_repo
 from src.infrastructure.database.models.studies_models import (
@@ -12,7 +12,6 @@ from src.schemas.studies_schemas import (
     PostCreateStudySchema,
     GetStudiesSchema,
     PatchStudySchema,
-    StudyReferenceSchema,
 )
 
 
@@ -52,73 +51,80 @@ class StudiesRepository:
         result = await self.db_session.execute(stmt)
         return result.scalar_one()
 
-    async def get_studies_by_user_id(self, user_id: UUID, params: GetStudiesSchema) -> list[StudyModel]:
-        order_col = getattr(StudyModel, params.sort_by, StudyModel.created_at)
+    async def get_studies_by_user_id(self, user_id: UUID, params: GetStudiesSchema) -> tuple[list[StudyModel], int]:
+        order_col = getattr(StudyModel, params.sort_by)
         order_fn  = desc if params.order == "desc" else asc
         offset    = (params.page - 1) * params.per_page
 
+        filters = [StudyModel.user_id == user_id, StudyModel.active == True]
+        if params.q and params.q.strip():
+            term = f"%{params.q.strip()}%"
+            filters.append(or_(StudyModel.title.ilike(term), StudyModel.introduction.ilike(term)))
+
+        total = await self.db_session.scalar(select(func.count()).select_from(StudyModel).where(*filters))
+
         stmt = (
             select(StudyModel)
-            .where(StudyModel.user_id == user_id, StudyModel.active == True)
-            .order_by(order_fn(order_col))
+            .where(*filters)
+            .order_by(order_fn(order_col), desc(StudyModel.id))
             .limit(params.per_page)
             .offset(offset)
         )
         result = await self.db_session.execute(stmt)
         # selectin carrega sections e references automaticamente
-        return result.scalars().all()
+        return list(result.scalars().all()), total or 0
 
-    async def get_study_owned_by_user(self, study_id: UUID, user_id: UUID) -> StudyModel | None:
-        stmt = select(StudyModel).where(StudyModel.id == study_id, StudyModel.user_id == user_id)
+    async def get_user_study(self, user_id: UUID, study_id: UUID) -> StudyModel | None:
+        """Estudo ativo do usuário; None se não existir ou for de outra pessoa."""
+        stmt = (
+            select(StudyModel)
+            .where(StudyModel.id == study_id, StudyModel.user_id == user_id, StudyModel.active == True)
+            .execution_options(populate_existing=True)
+        )
         result = await self.db_session.execute(stmt)
         return result.scalar_one_or_none()
 
     async def update_study(self, user_id: UUID, data: PatchStudySchema) -> StudyModel | None:
-        study = await self.get_study_owned_by_user(data.study_id, user_id)
+        study = await self.get_user_study(user_id, data.study_id)
         if not study:
             return None
 
         if data.title        is not None: study.title        = data.title
         if data.introduction is not None: study.introduction = data.introduction
         if data.conclusion   is not None: study.conclusion   = data.conclusion
-        await self.db_session.commit()
+        study.updated_at = func.now()
 
-        # Atualiza seções por ID
-        for section_patch in data.sections:
-            stmt = select(StudySectionModel).where(
-                StudySectionModel.id == section_patch.id,
-                StudySectionModel.study_id == data.study_id,
-            )
-            result = await self.db_session.execute(stmt)
-            section = result.scalar_one_or_none()
-            if section:
-                if section_patch.title       is not None: section.title       = section_patch.title
-                if section_patch.text        is not None: section.text        = section_patch.text
-                if section_patch.order_index is not None: section.order_index = section_patch.order_index
-        if data.sections:
-            await self.db_session.commit()
+        # Seções: substitui todas, na ordem enviada (a ordem é única por estudo)
+        if data.sections is not None:
+            await self.db_session.execute(delete(StudySectionModel).where(StudySectionModel.study_id == study.id))
+            await self.db_session.flush()
+            for i, section in enumerate(data.sections):
+                self.db_session.add(StudySectionModel(
+                    study_id=study.id,
+                    title=section.title,
+                    text=section.text,
+                    order_index=i,
+                ))
 
-        # Substitui referências se explicitamente enviadas (inclusive lista vazia)
+        # Referências: substitui se enviadas (inclusive lista vazia)
         if data.references is not None:
-            await self.db_session.execute(
-                delete(StudyReferenceModel).where(StudyReferenceModel.study_id == data.study_id)
-            )
+            await self.db_session.execute(delete(StudyReferenceModel).where(StudyReferenceModel.study_id == study.id))
             for ref in data.references:
                 self.db_session.add(StudyReferenceModel(
-                    study_id=data.study_id,
+                    study_id=study.id,
                     book=ref.book,
                     chapter=ref.chapter,
                     verse_start=ref.verse_start,
                     verse_end=ref.verse_end,
                 ))
-            await self.db_session.commit()
 
-        return study
+        await self.db_session.commit()
+        return await self.get_user_study(user_id, data.study_id)
 
-    async def deactivate_study(self, user_id: UUID, study_id: UUID) -> StudyModel | None:
-        study = await self.get_study_owned_by_user(study_id, user_id)
+    async def deactivate_study(self, user_id: UUID, study_id: UUID) -> bool:
+        study = await self.get_user_study(user_id, study_id)
         if not study:
-            return None
+            return False
         study.active = False
         await self.db_session.commit()
-        return study
+        return True

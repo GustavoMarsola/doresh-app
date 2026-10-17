@@ -58,6 +58,15 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				brand: 'hsl(var(--brand))',
+				verse: {
+					selected: 'hsl(var(--verse-selected))'
+				},
+				highlight: {
+					yellow: 'hsl(var(--hl-yellow))',
+					blue: 'hsl(var(--hl-blue))',
+					red: 'hsl(var(--hl-red))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',

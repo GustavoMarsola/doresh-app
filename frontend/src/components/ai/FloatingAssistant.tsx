@@ -70,7 +70,6 @@ const FloatingAssistant = () => {
           }
         );
         const data = await response.json();
-        console.log(data)
 
         const aiText =
           data.output
@@ -105,18 +104,20 @@ const FloatingAssistant = () => {
     <>
       {/* Botão flutuante */}
       <Button
-  className={`fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg text-white z-50 transition-all duration-300 ${
+  className={`fixed bottom-6 right-6 z-40 hidden min-h-[52px] gap-2.5 rounded-full bg-accent pl-4 pr-5 text-[15px] font-semibold text-accent-foreground shadow-lg shadow-accent/25 transition-transform duration-300 hover:bg-accent/90 md:inline-flex [[data-verse-panel=open]_&]:hidden ${
     isChatOpen ? 'scale-0' : 'scale-100'
   }`}
   onClick={() => setIsChatOpen(true)}
+  aria-label="Abrir o Ruach, assistente de estudo"
 >
-  <DoveIcon size="md" className="text-white" />
+  <DoveIcon size="sm" />
+  Perguntar ao Ruach
 </Button>
 
       {/* Chat expandido */}
       {isChatOpen && (
         <Card
-  className="fixed bottom-6 right-6 z-50 shadow-2xl glass-effect rounded-2xl
+  className="fixed bottom-6 right-6 z-50 shadow-2xl rounded-2xl overflow-hidden
   w-[90vw] h-[80vh]               /* padrão: mobile ocupa quase toda tela */
   sm:w-[500px] sm:h-[550px]       /* tablets pequenos */
   md:w-[650px] md:h-[650px]       /* notebooks */
@@ -125,7 +126,7 @@ const FloatingAssistant = () => {
   flex flex-col"      
 >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b bg-primary/90 text-white rounded-t-lg">
+          <div className="flex items-center justify-between p-4 border-b bg-accent text-accent-foreground">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
                 <DoveIcon className="h-4 w-4" />
@@ -136,7 +137,8 @@ const FloatingAssistant = () => {
               variant="ghost"
               size="sm"
               onClick={() => setIsChatOpen(false)}
-              className="text-white hover:bg-white/10"
+              className="text-accent-foreground hover:bg-white/10 hover:text-accent-foreground"
+              aria-label="Fechar o Ruach"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -153,8 +155,8 @@ const FloatingAssistant = () => {
     <div
       className={`max-w-[85%] p-3 rounded-lg text-base whitespace-pre-wrap ${
         msg.isUser
-          ? 'bg-primary/90 text-white'
-          : 'bg-gray-100 text-gray-800'
+          ? 'bg-primary text-primary-foreground'
+          : 'bg-muted text-foreground'
       }`}
     >
       <ReactMarkdown
@@ -164,7 +166,7 @@ const FloatingAssistant = () => {
         {...props}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-blue-600 underline hover:text-blue-800"
+        className="underline underline-offset-2 hover:opacity-80"
       />
     )
   }}
@@ -177,11 +179,11 @@ const FloatingAssistant = () => {
 
               {isLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-gray-100 p-3 rounded-lg text-sm">
+                  <div className="bg-muted p-3 rounded-lg text-sm">
                     <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
                   </div>
                 </div>
@@ -192,7 +194,7 @@ const FloatingAssistant = () => {
           {/* Sugestões rápidas */}
           {messages.length === 1 && (
             <div className="px-4 pb-2">
-              <p className="text-xs text-gray-500 mb-2">Sugestões:</p>
+              <p className="text-xs text-muted-foreground mb-2">Sugestões:</p>
               <div className="flex flex-wrap gap-1">
                 {quickSuggestions.slice(0, 4).map((suggestion, index) => (
                   <Button
@@ -223,14 +225,15 @@ const FloatingAssistant = () => {
           if (!isLoading) handleSendMessage();
         }
       }}
-      className="flex-1 rounded-xl px-4 py-2 border resize-none focus:outline-none focus:ring-2 focus:ring-[primary/90] overflow-hidden"
+      aria-label="Sua pergunta para o Ruach"
+      className="flex-1 rounded-xl px-4 py-2 border border-input bg-background text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring overflow-hidden"
       rows={1}
     />
     <Button
       size="sm"
       onClick={handleSendMessage}
       disabled={!message.trim() || isLoading}
-      className="mecontabill-gradient text-white"
+      aria-label="Enviar pergunta"
     >
       <Send className="h-4 w-4" />
     </Button>

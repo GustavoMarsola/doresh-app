@@ -1,20 +1,22 @@
 from uuid import UUID
-from typing import Optional, List
-from pydantic import BaseModel
+from typing import Literal, Optional, List
+from pydantic import BaseModel, Field
 
 
 class GetStudiesSchema(BaseModel):
-    page:     int = 1
-    per_page: int = 10
-    sort_by:  str = "created_at"
-    order:    str = "desc"
+    page:     int = Field(1, ge=1)
+    per_page: int = Field(12, ge=1, le=50)
+    sort_by:  Literal["created_at", "updated_at", "title"] = "updated_at"
+    order:    Literal["asc", "desc"] = "desc"
+    # Busca por título ou introdução (sem diferenciar maiúsculas)
+    q:        Optional[str] = Field(None, max_length=200)
 
 
 class StudyReferenceSchema(BaseModel):
     book:        str
-    chapter:     int
-    verse_start: Optional[int] = None
-    verse_end:   Optional[int] = None
+    chapter:     int = Field(..., ge=1)
+    verse_start: Optional[int] = Field(None, ge=1)
+    verse_end:   Optional[int] = Field(None, ge=1)
 
 
 class StudySectionSchema(BaseModel):
@@ -24,26 +26,19 @@ class StudySectionSchema(BaseModel):
 
 
 class PostCreateStudySchema(BaseModel):
-    title:        str
-    introduction: str
-    conclusion:   str
+    title:        str = Field(..., min_length=1, max_length=300)
+    introduction: str = ""
+    conclusion:   str = ""
     ai_generated: bool = False
     references:   List[StudyReferenceSchema]  = []
     sections:     List[StudySectionSchema]    = []
 
 
-class StudySectionPatchSchema(BaseModel):
-    id:          UUID
-    title:       Optional[str] = None
-    text:        Optional[str] = None
-    order_index: Optional[int] = None
-
-
 class PatchStudySchema(BaseModel):
     study_id:     UUID
-    title:        Optional[str]                       = None
-    introduction: Optional[str]                       = None
-    conclusion:   Optional[str]                       = None
-    sections:     List[StudySectionPatchSchema]        = []
-    # None = não mexe nas referências; [] = remove todas
+    title:        Optional[str] = Field(None, min_length=1, max_length=300)
+    introduction: Optional[str] = None
+    conclusion:   Optional[str] = None
+    # None = não mexe; lista (inclusive vazia) = substitui todas, na ordem enviada
+    sections:     Optional[List[StudySectionSchema]]   = None
     references:   Optional[List[StudyReferenceSchema]] = None

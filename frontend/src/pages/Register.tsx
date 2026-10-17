@@ -72,7 +72,7 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -80,27 +80,25 @@ export const Register: React.FC = () => {
       >
         {/* Header simplificado fora do card para dar leveza */}
         <div className="flex flex-col items-center mb-8 space-y-2">
-          <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-100 mb-2">
-            <Logo size="lg" className="text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Comece sua jornada</h1>
-          <p className="text-slate-500 text-sm">Preencha os dados para criar sua conta no Doresh</p>
+          <Logo size="xl" className="mb-2" />
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Comece sua jornada</h1>
+          <p className="text-muted-foreground text-sm">Preencha os dados para criar sua conta no Doresh</p>
         </div>
 
-        <Card className="border-slate-200 shadow-xl shadow-slate-200/40 bg-white overflow-hidden">
+        <Card className="border-border shadow-xl shadow-black/5 bg-card overflow-hidden">
           <CardContent className="pt-8">
             <form onSubmit={handleRegister} className="space-y-6">
               
               {/* Grid para Nome e Documento - Ocupa menos espaço vertical */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="text-slate-700 font-medium ml-1">Nome de Usuário</Label>
+                  <Label htmlFor="username" className="text-foreground font-medium ml-1">Nome de Usuário</Label>
                   <div className="relative group">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                     <Input
                       id="username"
                       placeholder="Nome completo"
-                      className="pl-10 h-11 border-slate-200 bg-slate-50/30 focus:bg-white transition-all"
+                      className="pl-10 h-11 bg-background transition-all"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       required
@@ -110,13 +108,13 @@ export const Register: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="cpfCnpj" className="text-slate-700 font-medium ml-1">CPF ou CNPJ</Label>
+                  <Label htmlFor="cpfCnpj" className="text-foreground font-medium ml-1">CPF ou CNPJ</Label>
                   <div className="relative group">
-                    <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                    <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                     <Input
                       id="cpfCnpj"
                       placeholder="Somente números"
-                      className="pl-10 h-11 border-slate-200 bg-slate-50/30 focus:bg-white transition-all"
+                      className="pl-10 h-11 bg-background transition-all"
                       value={cpfCnpj}
                       onChange={(e) => setCpfCnpj(e.target.value)}
                       required
@@ -128,14 +126,14 @@ export const Register: React.FC = () => {
 
               {/* Email ocupa a largura total */}
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-slate-700 font-medium ml-1">Email Profissional</Label>
+                <Label htmlFor="email" className="text-foreground font-medium ml-1">Email Profissional</Label>
                 <div className="relative group">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="exemplo@email.com"
-                    className="pl-10 h-11 border-slate-200 bg-slate-50/30 focus:bg-white transition-all"
+                    className="pl-10 h-11 bg-background transition-all"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -147,14 +145,14 @@ export const Register: React.FC = () => {
               {/* Grid para Senhas */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-slate-700 font-medium ml-1">Senha</Label>
+                  <Label htmlFor="password" className="text-foreground font-medium ml-1">Senha</Label>
                   <div className="relative group">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                     <Input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••"
-                      className="pl-10 pr-10 h-11 border-slate-200 bg-slate-50/30 focus:bg-white transition-all"
+                      className="pl-10 pr-10 h-11 bg-background transition-all"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -164,7 +162,7 @@ export const Register: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -172,13 +170,13 @@ export const Register: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-slate-700 font-medium ml-1">Confirmar</Label>
+                  <Label htmlFor="confirmPassword" className="text-foreground font-medium ml-1">Confirmar</Label>
                   <div className="relative group">
                     <Input
                       id="confirmPassword"
                       type={showConfirmPassword ? 'text' : 'password'}
                       placeholder="••••••••"
-                      className={`h-11 border-slate-200 bg-slate-50/30 focus:bg-white transition-all ${
+                      className={`h-11 bg-background transition-all ${
                         confirmPassword ? (passwordsMatch ? 'border-green-200 ring-1 ring-green-100' : 'border-red-200 ring-1 ring-red-100') : ''
                       }`}
                       value={confirmPassword}
@@ -190,7 +188,7 @@ export const Register: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="text-slate-400 hover:text-slate-600 transition-colors"
+                        className="text-muted-foreground hover:text-foreground transition-colors"
                       >
                         {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -204,15 +202,15 @@ export const Register: React.FC = () => {
 
               <Button 
                 type="submit" 
-                className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-all font-medium mt-2"
+                className="w-full h-11 rounded-lg transition-all font-medium mt-2"
                 disabled={isLoading}
               >
                 {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Criar minha conta"}
               </Button>
             </form>
 
-            <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-              <p className="text-sm text-slate-500">
+            <div className="mt-8 pt-6 border-t border-border text-center">
+              <p className="text-sm text-muted-foreground">
                 Já faz parte da comunidade?{' '}
                 <Link to="/login" className="text-primary font-bold hover:underline underline-offset-4">
                   Fazer Login

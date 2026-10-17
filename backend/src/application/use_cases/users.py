@@ -3,7 +3,7 @@ import asyncio
 import logging
 from uuid import UUID
 from datetime import datetime, timedelta
-from fastapi import Response, status
+from fastapi import HTTPException, Response, status
 from src.infrastructure.repositories.app_repository import AppRepository
 from src.infrastructure.repositories.redis_repository import RedisRepository
 from src.infrastructure.repositories.users_repository import RefreshOutcome
@@ -130,7 +130,10 @@ class UsersUseCase:
             )
 
         if outcome is not RefreshOutcome.ROTATED:
-            raise UnauthorizedException("auth.invalid_refresh_token")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="auth.invalid_refresh_token",
+            )
 
         access_token = generate_tokens(session.user_id, session.id)
         return RefreshTokenResponse(
@@ -146,7 +149,10 @@ class UsersUseCase:
         session_id = UUID(payload_token["session_id"])
         session    = await self.repository.users.logout_session(user_id, session_id)
         if not session:
-            raise NotFoundException("Session not found")
+            return Response(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content=json.dumps({"message": "Session not found"}),
+            )
         await SessionsUseCase(self.repository, self.redis_repository).mark_revoked(user_id, session_id)
 
         session_data = {
