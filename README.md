@@ -9,7 +9,7 @@
 
   <p>
     <img src="https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi" alt="FastAPI" />
-    <img src="https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react&logoColor=black" alt="React" />
+    <img src="https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react&logoColor=black" alt="React" />
     <img src="https://img.shields.io/badge/Python-3.11-3776ab?style=flat-square&logo=python&logoColor=white" alt="Python" />
     <img src="https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
     <img src="https://img.shields.io/badge/PostgreSQL-16-336791?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL" />
@@ -28,8 +28,7 @@ A aplicação permite:
 - **Ler a Bíblia** nas versões NVI e ARA, capítulo a capítulo
 - **Destacar versículos** com cores e adicionar comentários pessoais
 - **Criar estudos bíblicos** estruturados com seções, referências e geração por IA
-- **Assistente Ruach** — chat com IA para aprofundamento teológico
-- **Gerenciar assinaturas** via gateway Asaas (PIX, boleto, cartão)
+- **Assistente Ruach** — chat com IA para aprofundamento teológico (UI pronta; integração de backend em desenvolvimento)
 
 ---
 
@@ -38,13 +37,11 @@ A aplicação permite:
 | Camada | Tecnologia |
 |---|---|
 | Backend | FastAPI 0.115 · Python 3.11 · SQLAlchemy 2 (async) |
-| Banco de dados | PostgreSQL 16 |
+| Banco de dados | PostgreSQL 16 (não incluso no `docker-compose.yml` — aponte `DATABASE_HOST`/`DATABASE_PORT` para sua instância) |
 | Cache / sessões | Redis 7 |
-| Frontend | React 19 · Vite · TypeScript 5 · Tailwind CSS · shadcn/ui |
+| Frontend | React 18 · Vite · TypeScript 5 · Tailwind CSS · shadcn/ui |
 | Auth | JWT (PyJWT) · bcrypt (passlib) |
-| Pagamentos | Asaas (sandbox/prod) |
 | IA | OpenAI GPT-4.1 mini |
-| Automações | n8n |
 | Deploy | Docker · docker compose |
 
 > **Monolito intencional.** Uma imagem Docker, um `docker compose up --build`. O React é servido pelo próprio FastAPI como SPA estático. O código está estruturado para ser desacoplado quando necessário.
@@ -60,9 +57,11 @@ cd doresh-app
 
 # 2. Configure as variáveis de ambiente
 cp .env.example .env
-# Edite .env com suas chaves (banco, JWT, OpenAI, Asaas, e-mail)
+# Edite .env com suas chaves (banco, JWT, OpenAI, e-mail)
+# DATABASE_HOST/DATABASE_PORT devem apontar para um Postgres já em execução —
+# o docker-compose deste projeto sobe apenas app + redis.
 
-# 3. Suba tudo
+# 3. Suba app + redis
 docker compose up --build
 ```
 
@@ -72,9 +71,8 @@ Após o build, a aplicação estará disponível em:
 |---|---|
 | App (React + API) | http://localhost:8000 |
 | Swagger (API docs) | http://localhost:8000/api/docs |
-| n8n | http://localhost:5678 |
 
-As tabelas do banco são criadas automaticamente na primeira inicialização.
+As tabelas do banco são criadas automaticamente na primeira inicialização (é necessário um Postgres acessível — veja acima).
 
 ---
 
@@ -110,29 +108,27 @@ doresh-app/
 │       ├── settings.py                # pydantic-settings (todas as env vars)
 │       ├── exceptions.py
 │       ├── application/
-│       │   └── use_cases/             # bible · email · studies · subscriptions · users
+│       │   └── use_cases/             # bible · email · studies · users
 │       ├── common/
 │       │   ├── authentication.py      # JWT + bcrypt
 │       │   ├── bible/                 # 66 livros × NVI + ARA (JSON)
-│       │   ├── decorators.py          # api_key_required · session_token_required
+│       │   ├── decorators.py          # api_key_required · session_token_required · rate_limiter
 │       │   └── utilities.py
 │       ├── infrastructure/
-│       │   ├── apis/asaas_api.py      # Gateway de pagamento
 │       │   ├── database/              # SQLAlchemy engines + modelos
 │       │   ├── redis/                 # Redis async engine
 │       │   └── repositories/          # AppRepository · RedisRepository + contextos
-│       ├── routes/api/v1/             # bible · studies · users · subscriptions
+│       ├── routes/api/v1/             # bible · studies · users
 │       └── schemas/                   # DTOs Pydantic
 │
 ├── frontend/
 │   └── src/
 │       ├── pages/                     # Dashboard · ReadBible · CreateSermon …
 │       ├── components/                # ui/ (shadcn) · layout/ · auth/ · ai/
-│       ├── hooks/                     # ChatContext · use-mobile · use-toast
-│       └── services/                  # Clientes HTTP → /api/v1
+│       └── hooks/                     # ChatContext · use-mobile · use-toast
 │
 ├── Dockerfile                         # Multi-stage: node build → python runner
-├── docker-compose.yml                 # app · db · redis · n8n
+├── docker-compose.yml                 # app · redis
 └── .env.example
 ```
 
@@ -189,17 +185,6 @@ Erros de autenticação (401, campo `detail`):
 | `POST` | `/highlight` | Bearer | Salva um versículo destacado |
 | `POST` | `/comment` | Bearer | Salva um comentário sobre um trecho |
 
-#### Assinaturas — `/api/v1/subscription`
-
-| Método | Rota | Auth | Descrição |
-|---|---|---|---|
-| `GET` | `/plans` | — | Lista planos disponíveis |
-| `POST` | `/customer` | Bearer | Cria cliente no Asaas |
-| `POST` | `/` | Bearer | Cria assinatura |
-| `GET` | `/` | Bearer | Consulta assinatura ativa |
-| `DELETE` | `/cancel` | Bearer | Cancela assinatura |
-| `POST` | `/event` | api-key | Webhook de eventos Asaas |
-
 ---
 
 ## Variáveis de ambiente
@@ -228,13 +213,11 @@ EMAIL_PASSWORD=app-password-do-gmail
 # OpenAI (assistente Ruach)
 OPENAI_API_KEY=
 OPENAI_ASSISTANT_ID=
-
-# Asaas (pagamentos)
-ASAAS_HOST=https://api-sandbox.asaas.com/v3
-ASAAS_ACCESS_TOKEN=
 ```
 
-> No `docker compose`, `DATABASE_HOST` e `REDIS_HOST` são sobrescritos automaticamente para os nomes dos serviços (`db` e `redis`). Você não precisa alterar esses campos no `.env`.
+> No `docker compose`, apenas `REDIS_HOST`/`REDIS_PORT` são sobrescritos automaticamente para o serviço `redis`. `DATABASE_HOST`/`DATABASE_PORT` continuam vindo do seu `.env` — aponte para um Postgres local, em outro container ou gerenciado.
+>
+> Rodando o backend fora do Docker (`uvicorn main:app --reload`), as variáveis são lidas automaticamente do `.env` na raiz do projeto — não é necessário exportá-las manualmente no shell.
 
 ---
 

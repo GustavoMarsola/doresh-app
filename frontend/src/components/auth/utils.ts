@@ -35,8 +35,3 @@ export async function authFetch(
 
 	return response;
 }
-
-
-export async function fetchMe() {
-	return authFetch(`${import.meta.env.VITE_N8N_WEBHOOK_URL}/user/me`);
-}

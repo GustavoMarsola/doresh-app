@@ -9,6 +9,7 @@ from src.infrastructure.repositories.redis_repository import RedisRepository
 from src.infrastructure.database.models.studies_models import StudyModel
 from src.schemas.studies_schemas import PostCreateStudySchema, GetStudiesSchema, PatchStudySchema
 from src.common.utilities import serialize
+from src.exceptions import NotFoundException
 
 _logger = logging.getLogger(__name__)
 

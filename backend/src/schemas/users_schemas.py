@@ -1,16 +1,16 @@
 from uuid     import UUID
 from typing   import Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class PostRegisterUserSchema(BaseModel):
     """
     Schema for registering a new user.
     """
-    email: str
-    password: str
-    username: str
-    document_number: str
+    email: EmailStr
+    password: str = Field(min_length=8)
+    username: str = Field(min_length=1)
+    document_number: str = Field(min_length=1)
     document_type: str
 
 
@@ -18,7 +18,7 @@ class PostAuthenticateUserSchema(BaseModel):
     """
     Schema for authenticating a user.
     """
-    email: str
+    email: EmailStr
     password: str
 
 

@@ -25,6 +25,7 @@ from src.common.utilities import serialize, get_future_date, generate_verificati
 from src.application.use_cases.sessions import SessionsUseCase
 from src.common.email_templates import template_email_confirmation
 from src.application.use_cases.email import EmailService
+from src.exceptions import NotFoundException, UnauthorizedException
 
 _logger = logging.getLogger(__name__)
 
@@ -86,10 +87,7 @@ class UsersUseCase:
     async def verify_email(self, verification_id: UUID) -> Response:
         user, verification = await self.repository.users.update_user_email_verification(verification_id)
         if not user or not verification:
-            return Response(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content=json.dumps({"message": "Verification not found or link expired"}),
-            )
+            raise NotFoundException("Verification not found or link expired")
         response_data = serialize({
             "message":      "Email verified successfully",
             "user":         user,
@@ -99,16 +97,9 @@ class UsersUseCase:
 
     async def authenticate_user(self, data: PostAuthenticateUserSchema) -> Response:
         db_user = await self.repository.users.get_user_by_email(data.email)
-        if not db_user:
-            return Response(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content=json.dumps({"message": "User not found"}),
-            )
-        if not verify_password(data.password, db_user.password):
-            return Response(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content=json.dumps({"message": "Invalid credentials"}),
-            )
+        # Mesma mensagem/status para e-mail inexistente e senha errada — evita enumeração de e-mails cadastrados.
+        if not db_user or not verify_password(data.password, db_user.password):
+            raise UnauthorizedException("Invalid credentials")
 
         refresh_token, refresh_hash, refresh_expires_at = _new_refresh_token()
         user_session = await self.repository.users.register_user_session(
@@ -173,10 +164,7 @@ class UsersUseCase:
     async def user_profile(self, payload_token: dict) -> Response:
         user_id = payload_token.get("sub")
         if not user_id:
-            return Response(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content=json.dumps({"message": "Unauthorized. Try to login again."}),
-            )
+            raise UnauthorizedException("Unauthorized. Try to login again.")
         highlights = await self.repository.users.get_user_highlights(user_id)
         comments   = await self.repository.users.get_user_comments(user_id)
         response   = serialize({

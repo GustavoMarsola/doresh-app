@@ -43,3 +43,10 @@ class RedisRepository:
 
     async def delete_key(self, key: str):
         return await self._conn.delete(key)
+
+    async def increment_with_ttl(self, key: str, time_in_seconds: int) -> int:
+        """Atomically increments key and sets its TTL on the first hit. Used for rate limiting."""
+        count = await self._conn.incr(key)
+        if count == 1:
+            await self._conn.expire(key, time_in_seconds)
+        return count

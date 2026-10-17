@@ -6,6 +6,7 @@ from src.infrastructure.repositories.redis_repository import RedisRepository
 from src.schemas.bible_schemas import GetBibleBookSchema, PostBibleHighlightSchema, PostBibleCommentSchema
 from src.common.bible.helpers import get_bible_book_content
 from src.common.utilities import serialize
+from src.exceptions import NotFoundException
 
 
 class BibleUseCase:
@@ -16,10 +17,7 @@ class BibleUseCase:
     async def get_bible_content(self, params: GetBibleBookSchema) -> Response:
         book = get_bible_book_content(params.name, params.version)
         if not book:
-            return Response(
-                content=json.dumps({"message": "Bible book not found"}),
-                status_code=status.HTTP_404_NOT_FOUND,
-            )
+            raise NotFoundException("Bible book not found")
         response = serialize({
             "message":              "Bible book found",
             "book":                 params.name,

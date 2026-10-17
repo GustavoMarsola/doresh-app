@@ -1,3 +1,4 @@
+import secrets
 from uuid import UUID
 from functools import wraps
 from jwt import ExpiredSignatureError, InvalidTokenError
@@ -22,23 +23,17 @@ def api_key_required(func):
                     break
 
         if request is None:
-            return JSONResponse(
+            raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content={"message": "Request object not found"},
+                detail="Request object not found",
             )
 
         api_key = request.headers.get("x-api-key")
-        if not api_key:
-            return JSONResponse(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"message": "Missing X-API-Key header"},
-            )
-
         expected_key = get_settings().app_settings.x_api_key
-        if api_key != expected_key:
-            return JSONResponse(
+        if not api_key or not secrets.compare_digest(api_key, expected_key):
+            raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"message": "Invalid X-API-Key"},
+                detail="Missing or invalid X-API-Key",
             )
 
         return await func(*args, **kwargs)
@@ -94,3 +89,22 @@ async def session_token_required(
         raise _unauthorized("auth.session_revoked")
 
     return payload
+
+
+def rate_limiter(action: str, max_attempts: int, window_seconds: int):
+    """FastAPI dependency factory: limits attempts per client IP for a given action (e.g. login, register)."""
+
+    async def _dependency(
+        request: Request,
+        redis_repository: RedisRepository = Depends(),
+    ) -> None:
+        client_ip = request.client.host if request.client else "unknown"
+        key = f"rate_limit:{action}:{client_ip}"
+        attempts = await redis_repository.increment_with_ttl(key, window_seconds)
+        if attempts > max_attempts:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many attempts. Try again later.",
+            )
+
+    return _dependency
