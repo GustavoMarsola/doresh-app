@@ -108,7 +108,7 @@ export const Register: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="cpfCnpj" className="text-foreground font-medium ml-1">CPF ou CNPJ</Label>
+                  <Label htmlFor="cpfCnpj" className="text-foreground font-medium ml-1">CPF</Label>
                   <div className="relative group">
                     <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                     <Input
@@ -126,7 +126,7 @@ export const Register: React.FC = () => {
 
               {/* Email ocupa a largura total */}
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-foreground font-medium ml-1">Email Profissional</Label>
+                <Label htmlFor="email" className="text-foreground font-medium ml-1">Email</Label>
                 <div className="relative group">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                   <Input
