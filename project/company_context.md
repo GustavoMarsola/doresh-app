@@ -98,6 +98,9 @@ haver decisão.
 Bíblia JFA Offline, apps de sermão com IA, ChatGPT/assistentes genéricos usados para preparar
 mensagens. Citar fonte e data de tudo; não inventar preços nem funcionalidades.
 
+✅ Benchmark de **planos de leitura e leitura em grupo** (2026-10-17):
+`docs/product/features/planos-de-leitura/pesquisa-mercado.md`.
+
 ## 10. Glossário
 
 | Termo | Significado |
@@ -126,3 +129,4 @@ mensagens. Citar fonte e data de tudo; não inventar preços nem funcionalidades
 | Data | Mudança | Quem |
 |---|---|---|
 | 2026-10-14 | Criação a partir do README, do código e dos agentes trazidos do Impera | Claude (a pedido do fundador) |
+| 2026-10-17 | Seção 9: link para a pesquisa de mercado de planos de leitura e grupos | product-manager |
