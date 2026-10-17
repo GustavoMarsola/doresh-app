@@ -1,9 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
 @layer base {
   :root {
@@ -16,26 +16,44 @@
     --popover: 0 0% 100%;
     --popover-foreground: 20 14% 15%;
 
-    --primary: 39 85% 35%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 39 85% 30%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 45 15% 88%;
     --secondary-foreground: 20 14% 15%;
 
     --muted: 45 15% 92%;
-    --muted-foreground: 25 5% 45%;
+    --muted-foreground: 25 5% 40%;
 
     --accent: 213 85% 18%;
     --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
 
     --border: 45 20% 88%;
     --input: 45 20% 88%;
-    --ring: 39 85% 35%;
+    --ring: 39 85% 30%;
 
     --radius: 1rem;
+
+    /* Azul-marinho do logo (torah.png) */
+    --brand: 213 52% 21%;
+
+    /* Seleção e grifos de versículos (o backend grava yellow / blue / red) */
+    --verse-selected: 39 46% 91%;
+    --hl-yellow: 45 90% 85%;
+    --hl-blue: 212 72% 91%;
+    --hl-red: 0 62% 90%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 20 14% 15%;
+    --sidebar-primary: 39 85% 30%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 45 15% 92%;
+    --sidebar-accent-foreground: 20 14% 15%;
+    --sidebar-border: 45 20% 88%;
+    --sidebar-ring: 39 85% 30%;
   }
 
   .dark {
@@ -60,12 +78,28 @@
     --accent: 213 85% 28%;
     --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
     --border: 20 14% 20%;
     --input: 20 14% 20%;
     --ring: 39 85% 45%;
+
+    --brand: 213 60% 76%;
+
+    --verse-selected: 39 85% 45% / 0.16;
+    --hl-yellow: 44 57% 18%;
+    --hl-blue: 212 45% 22%;
+    --hl-red: 357 37% 21%;
+
+    --sidebar-background: 20 14% 10%;
+    --sidebar-foreground: 45 8% 95%;
+    --sidebar-primary: 39 85% 45%;
+    --sidebar-primary-foreground: 20 14% 8%;
+    --sidebar-accent: 20 14% 15%;
+    --sidebar-accent-foreground: 45 8% 95%;
+    --sidebar-border: 20 14% 20%;
+    --sidebar-ring: 39 85% 45%;
   }
 }
 
@@ -93,6 +127,12 @@
 
 .animate-fade-in {
   animation: fadeIn 0.5s ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    animation: none;
+  }
 }
 
 @keyframes fadeIn {

@@ -1,22 +1,20 @@
-<svg 
-  xmlns="http://www.w3.org/2000/svg" 
-  viewBox="0 0 48 48" 
-  width="48" 
-  height="48" 
-  fill="none"
->
-  <!-- Torah scroll -->
-  <rect x="4" y="8" width="40" height="32" rx="2" fill="currentColor" opacity="0.1"/>
-  <rect x="6" y="10" width="36" height="28" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
-  
-  <!-- Scroll handles -->
-  <rect x="2" y="6" width="2" height="36" rx="1" fill="currentColor"/>
-  <rect x="44" y="6" width="2" height="36" rx="1" fill="currentColor"/>
-  
-  <!-- Hebrew text lines -->
-  <line x1="10" y1="16" x2="38" y2="16" stroke="currentColor" stroke-width="1" opacity="0.7"/>
-  <line x1="10" y1="20" x2="35" y2="20" stroke="currentColor" stroke-width="1" opacity="0.7"/>
-  <line x1="10" y1="24" x2="38" y2="24" stroke="currentColor" stroke-width="1" opacity="0.7"/>
-  <line x1="10" y1="28" x2="32" y2="28" stroke="currentColor" stroke-width="1" opacity="0.7"/>
-  <line x1="10" y1="32" x2="38" y2="32" stroke="currentColor" stroke-width="1" opacity="0.7"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="174 174 676 676" width="512" height="512" fill="#193350">
+  <!-- Doresh: pergaminho da Torá (vetor do torah.png) -->
+  <rect x="247" y="175" width="50" height="120" rx="25"/>
+  <path d="M207 325h130a10 10 0 0 0 10-10c0-25-32-43-75-43s-75 18-75 43a10 10 0 0 0 10 10Z"/>
+  <rect x="217" y="345" width="100" height="332" rx="6"/>
+  <path d="M207 697h130a10 10 0 0 1 10 10c0 25-32 43-75 43s-75-18-75-43a10 10 0 0 1 10-10Z"/>
+  <rect x="247" y="728" width="50" height="122" rx="25"/>
+  <rect x="727" y="175" width="50" height="120" rx="25"/>
+  <path d="M687 325h130a10 10 0 0 0 10-10c0-25-32-43-75-43s-75 18-75 43a10 10 0 0 0 10 10Z"/>
+  <rect x="697" y="345" width="100" height="332" rx="6"/>
+  <path d="M687 697h130a10 10 0 0 1 10 10c0 25-32 43-75 43s-75-18-75-43a10 10 0 0 1 10-10Z"/>
+  <rect x="727" y="728" width="50" height="122" rx="25"/>
+  <rect x="344" y="326" width="337" height="372" rx="50" fill="none" stroke="#193350" stroke-width="28"/>
+  <g stroke="#193350" stroke-width="28" stroke-linecap="round">
+    <path d="M412 405h200"/>
+    <path d="M412 469h120M576 469h36"/>
+    <path d="M412 533h200"/>
+    <path d="M412 597h78M533 597h79"/>
+  </g>
 </svg>
