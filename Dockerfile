@@ -22,4 +22,5 @@ COPY --from=frontend-builder /backend/static ./static
 
 EXPOSE 8000
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Apply pending migrations, then start the API.
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn main:app --host 0.0.0.0 --port 8000"]

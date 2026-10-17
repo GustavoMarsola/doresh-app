@@ -14,13 +14,9 @@ _logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
+    # The schema is managed by Alembic (`alembic upgrade head`), run before the app starts:
+    # by the Docker CMD in production, by hand in local development.
     from src.infrastructure.database import models  # noqa: F401 — registers all ORM models
-    from src.infrastructure.database.settings import async_engine
-    from src.infrastructure.database.models.entity_model import EntityModel
-
-    async with async_engine.begin() as conn:
-        await conn.run_sync(EntityModel.metadata.create_all)
-        _logger.info("Database tables ensured")
 
     yield
 

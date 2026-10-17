@@ -72,7 +72,10 @@ Após o build, a aplicação estará disponível em:
 | App (React + API) | http://localhost:8000 |
 | Swagger (API docs) | http://localhost:8000/api/docs |
 
-As tabelas do banco são criadas automaticamente na primeira inicialização (é necessário um Postgres acessível — veja acima).
+O container aplica as migrações (`alembic upgrade head`) antes de subir a API (é necessário um Postgres acessível — veja acima).
+
+> **Banco criado antes do Alembic** (quando as tabelas vinham do `create_all`): marque-o uma vez com o baseline antes do primeiro `upgrade`:
+> `cd backend && alembic stamp 7766b2e0e190 && alembic upgrade head`
 
 ---
 
@@ -84,6 +87,7 @@ Execute backend e frontend em paralelo:
 # Terminal 1 — Backend
 cd backend
 pip install -r requirements.txt
+alembic upgrade head          # aplica as migrações (rode de novo depois de cada pull)
 uvicorn main:app --reload --port 8000
 
 # Terminal 2 — Frontend
@@ -93,6 +97,18 @@ npm run dev   # Vite em :5173, proxy /api → :8000
 ```
 
 Não é necessário configurar CORS para dev — o proxy do Vite cuida disso.
+
+### Migrações (Alembic)
+
+O schema é versionado com Alembic em `backend/src/infrastructure/database/migrations/` — a app não cria nem altera tabelas ao iniciar.
+
+```bash
+cd backend
+alembic revision --autogenerate -m "add theme to users"   # depois de mudar um model; revise o arquivo gerado
+alembic upgrade head                                      # aplica
+alembic downgrade -1                                      # desfaz a última
+alembic check                                             # models e migrações batem?
+```
 
 ---
 
