@@ -101,6 +101,10 @@ mensagens. Citar fonte e data de tudo; não inventar preços nem funcionalidades
 ✅ Benchmark de **planos de leitura e leitura em grupo** (2026-10-17):
 `docs/product/features/planos-de-leitura/pesquisa-mercado.md`.
 
+✅ Pesquisa de mercado de **features de apps de estudo bíblico** e proposta de estágios
+MVP / V1 / Avançado (2026-10-23, rascunho para decisão do fundador):
+`docs/product/pesquisa-mercado-features.md`.
+
 ## 10. Glossário
 
 | Termo | Significado |
@@ -130,3 +134,4 @@ mensagens. Citar fonte e data de tudo; não inventar preços nem funcionalidades
 |---|---|---|
 | 2026-10-14 | Criação a partir do README, do código e dos agentes trazidos do Impera | Claude (a pedido do fundador) |
 | 2026-10-17 | Seção 9: link para a pesquisa de mercado de planos de leitura e grupos | product-manager |
+| 2026-10-23 | Seção 9: link para a pesquisa de mercado de features e estágios (MVP/V1/Avançado) | product-manager |
