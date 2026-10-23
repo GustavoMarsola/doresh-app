@@ -22,6 +22,28 @@ class PostAuthenticateUserSchema(BaseModel):
     password: str
 
 
+class PostForgotPasswordSchema(BaseModel):
+    """
+    Body of POST /user/password/forgot.
+    """
+    email: EmailStr
+
+
+class PostResetPasswordSchema(BaseModel):
+    """
+    Body of POST /user/password/reset: the token from the e-mailed link and the new password.
+    """
+    token:    str = Field(..., min_length=1, max_length=512)
+    password: str = Field(..., min_length=8)
+
+
+class DeleteAccountSchema(BaseModel):
+    """
+    Body of DELETE /user/account: the current password confirms the erasure.
+    """
+    password: str = Field(..., min_length=1)
+
+
 class AuthenticateTokenSchema(BaseModel):
     """
     Schema for user authentication response.

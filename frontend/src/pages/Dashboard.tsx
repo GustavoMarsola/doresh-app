@@ -3,85 +3,16 @@ import { Link } from "react-router-dom";
 import { PlusCircle, BookOpen, ScrollText, MessageSquare, Highlighter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { authFetch } from '@/components/auth/utils';
-import { findBookBySlug, formatReference } from '@/data/bibleCanon';
-
-interface Highlight {
-  id: string;
-  book: string;
-  chapter: number;
-  verse: number;
-  color: string;
-  text: string | null;
-  updated_at: string;
-}
-
-interface Comment {
-  id: string;
-  book: string;
-  chapter: number;
-  verse_start: number;
-  verse_end: number;
-  comment: string;
-  created_at: string;
-}
-
-interface HighlightGroup {
-  key: string;
-  bookName: string;
-  chapter: number;
-  verses: number[];
-  texts: (string | null)[];
-  color: string;
-  updatedAt: string;
-}
-
-const bookName = (slug: string) => findBookBySlug(slug)?.name ?? slug;
+import { formatReference } from '@/data/bibleCanon';
+import { bookName, commentVerses, groupHighlights, lastReaderVersion, type Annotations, type Comment } from '@/lib/annotations';
 
 const readerLink = (slug: string, chapter: number) =>
   `/ler?livro=${encodeURIComponent(bookName(slug))}&cap=${chapter}`;
 
-/** Junta versículos seguidos do mesmo capítulo e cor ("João 3:16–18"); os mais recentes primeiro. */
-const groupHighlights = (highlights: Highlight[]): HighlightGroup[] => {
-  const sorted = [...highlights].sort(
-    (a, b) => a.book.localeCompare(b.book) || a.chapter - b.chapter || a.verse - b.verse,
-  );
-  const groups: (HighlightGroup & { slug: string })[] = [];
-  for (const h of sorted) {
-    const last = groups[groups.length - 1];
-    if (last && last.slug === h.book && last.chapter === h.chapter && last.color === h.color && last.verses[last.verses.length - 1] === h.verse - 1) {
-      last.verses.push(h.verse);
-      last.texts.push(h.text);
-      if (h.updated_at > last.updatedAt) last.updatedAt = h.updated_at;
-    } else {
-      groups.push({ key: h.id, slug: h.book, bookName: bookName(h.book), chapter: h.chapter, verses: [h.verse], texts: [h.text], color: h.color, updatedAt: h.updated_at });
-    }
-  }
-  return groups.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-};
-
-/** Versão que a pessoa usou por último no leitor (o leitor guarda em doresh:last-passage). */
-const lastReaderVersion = () => {
-  try {
-    return JSON.parse(localStorage.getItem('doresh:last-passage') ?? 'null')?.version === 'ARA' ? 'ara' : 'nvi';
-  } catch {
-    return 'nvi';
-  }
-};
-
-const commentReference = (c: Comment) =>
-  formatReference(
-    bookName(c.book),
-    c.chapter,
-    Array.from({ length: c.verse_end - c.verse_start + 1 }, (_, i) => c.verse_start + i),
-  );
-
-interface UserData {
-  highlights: Highlight[];
-  comments: Comment[];
-}
+const commentReference = (c: Comment) => formatReference(bookName(c.book), c.chapter, commentVerses(c));
 
 export const Dashboard: React.FC = () => {
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const [userData, setUserData] = useState<Annotations | null>(null);
   const [loading, setLoading] = useState(true);
   const [visibleHighlights, setVisibleHighlights] = useState(3);
   const [visibleComments, setVisibleComments] = useState(3);

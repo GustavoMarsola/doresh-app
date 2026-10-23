@@ -12,6 +12,9 @@ from src.schemas.users_schemas import (
     PostAuthenticateUserSchema,
     RefreshTokenRequest,
     RefreshTokenResponse,
+    PostForgotPasswordSchema,
+    PostResetPasswordSchema,
+    DeleteAccountSchema,
 )
 from src.common.authentication import (
     hash_password,
@@ -19,19 +22,42 @@ from src.common.authentication import (
     generate_tokens,
     generate_refresh_token,
     hash_refresh_token,
+    generate_password_reset_token,
+    hash_password_reset_token,
     REFRESH_TOKEN_EXPIRE_DAYS,
 )
 from src.common.bible.helpers import get_verse_text
 from src.common.utilities import serialize, get_future_date, generate_verification_code, set_local_time
 from src.application.use_cases.sessions import SessionsUseCase
-from src.common.email_templates import template_email_confirmation
+from src.common.email_templates import template_email_confirmation, template_password_reset
 from src.application.use_cases.email import EmailService
-from src.exceptions import NotFoundException, UnauthorizedException
+from src.exceptions import NotFoundException, UnauthorizedException, ForbiddenException
+from src.settings import get_settings
 
 _logger = logging.getLogger(__name__)
 
 REFRESH_TOKEN_EXPIRES_IN = REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
 SESSION_SECRET_FIELDS    = ("refresh_token_hash", "previous_refresh_token_hash")
+
+
+def password_reset_key(token_hash: str) -> str:
+    return f"auth:password_reset:{token_hash}"
+
+
+def user_password_reset_key(user_id: UUID) -> str:
+    """Hash of the user's latest reset token: a new request invalidates the previous link."""
+    return f"u:{user_id}:auth:password_reset"
+
+
+def _send_email_in_background(to_email: str, subject: str, html_content: str) -> None:
+    """Send without making the caller wait, so the response time doesn't reveal whether the e-mail exists."""
+    def _send() -> None:
+        try:
+            EmailService().send_email(to_email=to_email, subject=subject, html_content=html_content)
+        except Exception as exc:
+            _logger.error("Failed to send e-mail '%s': %s", subject, exc)
+
+    asyncio.get_running_loop().run_in_executor(None, _send)
 
 
 def _new_refresh_token() -> tuple[str, str, datetime]:
@@ -179,3 +205,72 @@ class UsersUseCase:
             "comments":   comments,
         })
         return Response(status_code=status.HTTP_200_OK, content=json.dumps(response))
+
+    async def request_password_reset(self, data: PostForgotPasswordSchema) -> Response:
+        # Same answer whether or not the e-mail is registered — avoids e-mail enumeration.
+        response = Response(
+            status_code=status.HTTP_200_OK,
+            content=json.dumps({"message": "If the e-mail is registered, a reset link has been sent"}),
+        )
+        user = await self.repository.users.get_user_by_email(data.email)
+        if not user:
+            return response
+
+        settings    = get_settings()
+        ttl_minutes = settings.auth_settings.password_reset_expire_minutes
+        token       = generate_password_reset_token()
+        token_hash  = hash_password_reset_token(token)
+
+        previous_hash = await self.redis_repository.get_key(user_password_reset_key(user.id))
+        if previous_hash:
+            await self.redis_repository.delete_key(password_reset_key(previous_hash))
+        await self.redis_repository.insert_key_ttl(password_reset_key(token_hash), str(user.id), ttl_minutes * 60)
+        await self.redis_repository.insert_key_ttl(user_password_reset_key(user.id), token_hash, ttl_minutes * 60)
+
+        reset_link = f"{settings.app_settings.public_url.rstrip('/')}/redefinir-senha?token={token}"
+        _send_email_in_background(
+            to_email=user.email,
+            subject="Redefinir senha - Doresh",
+            html_content=template_password_reset(user.username, reset_link, ttl_minutes),
+        )
+        return response
+
+    async def reset_password(self, data: PostResetPasswordSchema) -> Response:
+        user_id = await self.redis_repository.pop_key(password_reset_key(hash_password_reset_token(data.token)))
+        user    = await self.repository.users.get_user_by_id(UUID(user_id)) if user_id else None
+        if not user:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="auth.invalid_reset_token")
+
+        await self.redis_repository.delete_key(user_password_reset_key(user.id))
+        await self.repository.users.update_password(user.id, hash_password(data.password))
+
+        # Whoever knew the old password is logged out everywhere.
+        session_ids = await self.repository.users.revoke_all_sessions(user.id, "Password reset")
+        sessions    = SessionsUseCase(self.repository, self.redis_repository)
+        for session_id in session_ids:
+            await sessions.mark_revoked(user.id, session_id)
+
+        return Response(
+            status_code=status.HTTP_200_OK,
+            content=json.dumps({"message": "Password reset successfully"}),
+        )
+
+    async def delete_account(self, payload_token: dict, data: DeleteAccountSchema) -> Response:
+        user_id = UUID(payload_token["sub"])
+        user    = await self.repository.users.get_user_by_id(user_id)
+        # 403, not 401: a wrong password must not look like an expired session to the client.
+        if not user or not verify_password(data.password, user.password):
+            raise ForbiddenException("account.invalid_password")
+
+        session_ids = await self.repository.users.delete_user_and_data(user_id)
+        sessions    = SessionsUseCase(self.repository, self.redis_repository)
+        for session_id in session_ids:
+            await sessions.mark_revoked(user_id, session_id)
+        reset_hash = await self.redis_repository.pop_key(user_password_reset_key(user_id))
+        if reset_hash:
+            await self.redis_repository.delete_key(password_reset_key(reset_hash))
+
+        return Response(
+            status_code=status.HTTP_200_OK,
+            content=json.dumps({"message": "Account deleted successfully"}),
+        )
