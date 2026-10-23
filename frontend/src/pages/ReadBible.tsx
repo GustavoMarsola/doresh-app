@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { PassagePicker } from '@/components/bible/PassagePicker';
 import { VerseActions, type HighlightColor } from '@/components/bible/VerseActions';
+import { ShareToGroupMenu } from '@/components/groups/ShareToGroupMenu';
 import { authFetch } from '@/components/auth/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -483,6 +484,8 @@ export const ReadBible: React.FC = () => {
 																)}
 															</p>
 															<p className="whitespace-pre-wrap text-sm text-foreground">{c.comment}</p>
+															{/* Só aparece para quem está em algum grupo de leitura */}
+															<ShareToGroupMenu input={{ kind: 'comment', comment_id: c.id }} className="mt-2" />
 														</li>
 													))}
 												</ul>

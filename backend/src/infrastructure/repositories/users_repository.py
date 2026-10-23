@@ -19,6 +19,11 @@ from src.infrastructure.database.models.reading_groups_models import (
     ReadingGroupMemberModel,
     ReadingGroupNoteModel,
 )
+from src.infrastructure.database.models.reading_group_mural_models import (
+    ReadingGroupShareModel,
+    ReadingGroupShareReplyModel,
+    ReadingGroupShareReportModel,
+)
 from src.infrastructure.database.models.bible_models import BibleHighlightsModel, BibleCommentsModel
 from src.common.utilities import set_local_time
 
@@ -213,6 +218,12 @@ class UsersRepository:
         # Groups the user leads go away with everything in them; in other groups only their own
         # participation (membership, progress) is erased — the group and the other members stay.
         led_groups = select(ReadingGroupModel.id).where(ReadingGroupModel.leader_id == user_id)
+        # Mural: what the user wrote anywhere, then everything on the murals of the groups they led
+        await self.db_session.execute(delete(ReadingGroupShareReplyModel).where(ReadingGroupShareReplyModel.user_id == user_id))
+        await self.db_session.execute(delete(ReadingGroupShareReportModel).where(ReadingGroupShareReportModel.user_id == user_id))
+        await self.db_session.execute(delete(ReadingGroupShareModel).where(
+            or_(ReadingGroupShareModel.user_id == user_id, ReadingGroupShareModel.group_id.in_(led_groups))
+        ))
         await self.db_session.execute(delete(ReadingGroupNoteModel).where(ReadingGroupNoteModel.group_id.in_(led_groups)))
         await self.db_session.execute(delete(ReadingGroupMemberModel).where(ReadingGroupMemberModel.group_id.in_(led_groups)))
         await self.db_session.execute(delete(ReadingGroupMemberModel).where(ReadingGroupMemberModel.user_id == user_id))

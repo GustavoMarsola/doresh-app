@@ -5,6 +5,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.repositories import get_session_repo
 from src.infrastructure.database.models.bible_models import BibleCommentsModel, BibleHighlightsModel
+from src.infrastructure.database.models.reading_group_mural_models import ReadingGroupShareModel
 
 
 class BibleRepository:
@@ -67,7 +68,18 @@ class BibleRepository:
         await self.db_session.refresh(comment)
         return comment
 
+    async def get_comment(self, user_id: UUID, comment_id: UUID) -> BibleCommentsModel | None:
+        stmt = select(BibleCommentsModel).where(
+            BibleCommentsModel.id == comment_id, BibleCommentsModel.user_id == user_id
+        )
+        result = await self.db_session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def delete_comment(self, user_id: UUID, comment_id: UUID) -> bool:
+        # A deleted comment also leaves every group mural it was shared on
+        await self.db_session.execute(delete(ReadingGroupShareModel).where(
+            ReadingGroupShareModel.comment_id == comment_id, ReadingGroupShareModel.user_id == user_id
+        ))
         stmt = delete(BibleCommentsModel).where(
             BibleCommentsModel.id == comment_id,
             BibleCommentsModel.user_id == user_id,

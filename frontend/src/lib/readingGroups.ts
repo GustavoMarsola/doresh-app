@@ -120,6 +120,12 @@ export const groupErrorMessage = (error: unknown) => {
       return 'O líder não pode ser removido.';
     case 'reading_group.study_not_found':
       return 'Esse estudo não está disponível. Escolha um dos seus estudos.';
+    case 'reading_group.annotation_not_found':
+      return 'Só dá para compartilhar destaques e comentários seus.';
+    case 'reading_group.share_not_found':
+      return 'Essa anotação já não está no mural.';
+    case 'reading_group.reply_not_found':
+      return 'Essa resposta já foi removida.';
     case 'reading_plan.too_many_days':
       return 'Esse prazo é longo demais para este plano. Escolha uma duração menor.';
     case 'reading_plan.invalid_duration':
@@ -313,3 +319,127 @@ const useGroupRemoval = (mutationFn: (id: string) => Promise<void>) => {
 
 export const useLeaveGroup = () => useGroupRemoval(groupsApi.leave);
 export const useRemoveGroup = () => useGroupRemoval(groupsApi.remove);
+
+// ── Mural da passagem (anotações partilhadas com o grupo) ──
+
+export type ShareKind = 'comment' | 'highlight';
+
+export interface ShareAuthor {
+  name: string | null;
+  role: GroupRole;
+  is_me: boolean;
+}
+
+export interface ShareReply {
+  id: string;
+  author: ShareAuthor;
+  text: string;
+  created_at: string;
+}
+
+export interface Share {
+  id: string;
+  kind: ShareKind;
+  author: ShareAuthor;
+  book: string; // slug ("1_corintios"), como nos comentários
+  chapter: number;
+  verse_start: number;
+  verse_end: number;
+  text: string | null;
+  color: string | null;
+  hidden: boolean;
+  reports: number; // só o líder recebe a contagem
+  reported_by_me: boolean;
+  replies: ShareReply[];
+  created_at: string;
+}
+
+/** Onde uma anotação minha está partilhada. */
+export interface MyShare {
+  id: string;
+  group_id: string;
+  group_name: string;
+  kind: ShareKind;
+  comment_id: string | null;
+  book: string;
+  chapter: number;
+  verse_start: number;
+  verse_end: number;
+}
+
+export type ShareInput =
+  | { kind: 'comment'; comment_id: string }
+  | { kind: 'highlight'; book: string; chapter: number; verse_start: number; verse_end: number };
+
+/** A partilha (minha) de uma anotação num grupo, se existir. */
+export const findMyShare = (shares: MyShare[], groupId: string, input: ShareInput) =>
+  shares.find((s) =>
+    s.group_id === groupId &&
+    (input.kind === 'comment'
+      ? s.comment_id === input.comment_id
+      : s.kind === 'highlight' && s.book === bookSlug(input.book) && s.chapter === input.chapter && s.verse_start === input.verse_start && s.verse_end === input.verse_end),
+  );
+
+export const muralApi = {
+  day: (id: string, day: number) => request<{ shares: Share[] }>(`/reading-groups/${id}/days/${day}/mural`).then((r) => r.shares),
+  mine: () => request<{ shares: MyShare[] }>('/reading-groups/my-shares').then((r) => r.shares),
+  share: (id: string, input: ShareInput) =>
+    request<{ share: Share }>(`/reading-groups/${id}/shares`, { method: 'POST', body: JSON.stringify(input) }).then((r) => r.share),
+  unshare: (id: string, shareId: string) => request<void>(`/reading-groups/${id}/shares/${shareId}`, { method: 'DELETE' }),
+  reply: (id: string, shareId: string, text: string) =>
+    request<{ share: Share }>(`/reading-groups/${id}/shares/${shareId}/replies`, { method: 'POST', body: JSON.stringify({ text }) }).then((r) => r.share),
+  deleteReply: (id: string, shareId: string, replyId: string) =>
+    request<{ share: Share }>(`/reading-groups/${id}/shares/${shareId}/replies/${replyId}`, { method: 'DELETE' }).then((r) => r.share),
+  setHidden: (id: string, shareId: string, hidden: boolean) =>
+    request<{ share: Share }>(`/reading-groups/${id}/shares/${shareId}/hidden`, { method: hidden ? 'PUT' : 'DELETE' }).then((r) => r.share),
+  report: (id: string, shareId: string) =>
+    request<{ share: Share }>(`/reading-groups/${id}/shares/${shareId}/report`, { method: 'POST' }).then((r) => r.share),
+};
+
+export const muralKeys = {
+  day: (id: string, day: number) => ['reading-groups', 'mural', id, day] as const,
+  mine: ['reading-groups', 'my-shares'] as const,
+};
+
+export const useDayMural = (id: string, day: number) =>
+  useQuery({
+    queryKey: muralKeys.day(id, day),
+    queryFn: () => muralApi.day(id, day),
+    retry: (count, error) => !notRetryable(error) && count < 2,
+  });
+
+export const useMyShares = (enabled = true) => useQuery({ queryKey: muralKeys.mine, queryFn: muralApi.mine, enabled });
+
+/** Partilhar / desfazer: atualiza "minhas partilhas" e todos os murais. */
+const useShareChange = <V, R>(mutationFn: (vars: V) => Promise<R>) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: muralKeys.mine });
+      queryClient.invalidateQueries({ queryKey: ['reading-groups', 'mural'] });
+    },
+  });
+};
+
+export const useShareAnnotation = () => useShareChange(({ groupId, input }: { groupId: string; input: ShareInput }) => muralApi.share(groupId, input));
+export const useUnshareAnnotation = () => useShareChange(({ groupId, shareId }: { groupId: string; shareId: string }) => muralApi.unshare(groupId, shareId));
+
+/** Respostas, ocultar e denunciar devolvem a partilha atualizada: substitui no mural do dia. */
+const useShareUpdate = <V>(id: string, day: number, mutationFn: (vars: V) => Promise<Share>) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: (share) => {
+      queryClient.setQueryData<Share[]>(muralKeys.day(id, day), (old) => old?.map((s) => (s.id === share.id ? share : s)) ?? old);
+    },
+  });
+};
+
+export const useReplyToShare = (id: string, day: number) =>
+  useShareUpdate(id, day, ({ shareId, text }: { shareId: string; text: string }) => muralApi.reply(id, shareId, text));
+export const useDeleteReply = (id: string, day: number) =>
+  useShareUpdate(id, day, ({ shareId, replyId }: { shareId: string; replyId: string }) => muralApi.deleteReply(id, shareId, replyId));
+export const useSetShareHidden = (id: string, day: number) =>
+  useShareUpdate(id, day, ({ shareId, hidden }: { shareId: string; hidden: boolean }) => muralApi.setHidden(id, shareId, hidden));
+export const useReportShare = (id: string, day: number) => useShareUpdate(id, day, (shareId: string) => muralApi.report(id, shareId));

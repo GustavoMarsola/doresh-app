@@ -9,6 +9,7 @@ from src.infrastructure.database.models.reading_groups_models import (
     ReadingGroupMemberModel,
     ReadingGroupNoteModel,
 )
+from src.infrastructure.database.models.reading_group_mural_models import ReadingGroupShareModel
 from src.infrastructure.database.models.users_models import UsersModel
 
 LEADER = "leader"
@@ -82,6 +83,7 @@ class ReadingGroupsRepository:
         await self.db_session.rollback()
 
     async def delete_group(self, group_id: UUID) -> None:
+        await self.db_session.execute(delete(ReadingGroupShareModel).where(ReadingGroupShareModel.group_id == group_id))
         await self.db_session.execute(delete(ReadingGroupNoteModel).where(ReadingGroupNoteModel.group_id == group_id))
         await self.db_session.execute(delete(ReadingGroupMemberModel).where(ReadingGroupMemberModel.group_id == group_id))
         await self.db_session.execute(delete(ReadingGroupModel).where(ReadingGroupModel.id == group_id))

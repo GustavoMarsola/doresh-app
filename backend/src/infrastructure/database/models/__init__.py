@@ -10,6 +10,11 @@ from src.infrastructure.database.models.reading_groups_models import (
     ReadingGroupMemberModel,
     ReadingGroupNoteModel,
 )
+from src.infrastructure.database.models.reading_group_mural_models import (
+    ReadingGroupShareModel,
+    ReadingGroupShareReplyModel,
+    ReadingGroupShareReportModel,
+)
 from src.infrastructure.database.models.studies_models import (
     StudyModel,
     StudySectionModel,

@@ -1,7 +1,11 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, BookOpen, Check, ChevronLeft, ChevronRight, FileText, Loader2, MessageSquareText, Pencil, Share2, Trash2, Undo2, Users } from 'lucide-react';
+import { AlertCircle, ArrowLeft, BookOpen, Check, ChevronLeft, ChevronRight, FileText, Highlighter, Loader2, MessageSquare, MessageSquareText, Pencil, Share2, Trash2, Undo2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PassageMural } from '@/components/groups/PassageMural';
+import { ShareToGroupMenu } from '@/components/groups/ShareToGroupMenu';
+import { formatReference } from '@/data/bibleCanon';
+import { annotationsIn, bookName, commentVerses, groupHighlights, useAnnotations } from '@/lib/annotations';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
@@ -160,7 +164,93 @@ const DayView: React.FC<{ group: GroupDetail; day: GroupDay }> = ({ group, day }
         </h2>
         {isLeader ? <NoteEditor group={group} day={day} /> : <NoteView group={group} day={day} />}
       </section>
+
+      {/* Mural da passagem: o que os membros escolheram partilhar deste trecho */}
+      <section aria-labelledby="mural-heading" className="space-y-3">
+        <h2 id="mural-heading" className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <Users className="h-4 w-4" /> Mural da passagem
+        </h2>
+        <PassageMural group={group} day={day.index} />
+      </section>
+
+      <MyAnnotations group={group} day={day} />
     </div>
+  );
+};
+
+const highlightBorder: Record<string, string> = {
+  yellow: 'border-yellow-400',
+  blue: 'border-blue-400',
+  red: 'border-red-500',
+};
+
+/** Minhas anotações nos trechos do dia, cada uma com "Compartilhar com o grupo"; continuam privadas até eu partilhar. */
+const MyAnnotations: React.FC<{ group: GroupDetail; day: GroupDay }> = ({ group, day }) => {
+  const annotationsQuery = useAnnotations();
+  const mine = React.useMemo(
+    () => (annotationsQuery.data ? annotationsIn(annotationsQuery.data, day.passages) : null),
+    [annotationsQuery.data, day.passages],
+  );
+  const highlightGroups = React.useMemo(() => groupHighlights(mine?.highlights ?? []), [mine]);
+  const count = highlightGroups.length + (mine?.comments.length ?? 0);
+
+  return (
+    <section aria-labelledby="my-notes-heading" className="space-y-3">
+      <h2 id="my-notes-heading" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        Minhas anotações {count > 0 && `(${count})`}
+      </h2>
+      {annotationsQuery.isLoading ? (
+        <div className="space-y-2" aria-busy="true">
+          <Skeleton className="h-16 w-full rounded-xl" />
+        </div>
+      ) : annotationsQuery.isError ? (
+        <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm">
+          <p className="font-medium text-foreground">Não foi possível carregar suas anotações.</p>
+          <Button className="mt-3" variant="outline" size="sm" onClick={() => annotationsQuery.refetch()}>
+            Tentar novamente
+          </Button>
+        </div>
+      ) : count === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+          <p>Você ainda não destacou nem comentou estes trechos.</p>
+          <p className="mt-1">Abra a leitura, toque num versículo para destacar ou comentar, e volte aqui para compartilhar com o grupo.</p>
+          <Button asChild variant="outline" size="sm" className="mt-4">
+            <Link to={readerLink(day.passages[0])}>
+              <BookOpen className="h-4 w-4" /> Abrir a leitura
+            </Link>
+          </Button>
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {highlightGroups.map((h) => (
+            <li key={h.key} className={cn('rounded-xl border-l-4 bg-card p-3 shadow-sm', highlightBorder[h.color] ?? 'border-primary')}>
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                <Highlighter className="h-3.5 w-3.5 text-muted-foreground" />
+                {formatReference(h.bookName, h.chapter, h.verses)}
+              </p>
+              {h.texts.some(Boolean) && (
+                <p className="mt-1 font-crimson text-[17px] leading-relaxed text-foreground/90">{h.texts.filter(Boolean).join(' ')}</p>
+              )}
+              <ShareToGroupMenu
+                groupId={group.id}
+                className="mt-2"
+                input={{ kind: 'highlight', book: h.bookName, chapter: h.chapter, verse_start: h.verses[0], verse_end: h.verses[h.verses.length - 1] }}
+              />
+            </li>
+          ))}
+          {mine?.comments.map((c) => (
+            <li key={c.id} className="rounded-xl border border-border bg-card p-3">
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+                {formatReference(bookName(c.book), c.chapter, commentVerses(c))}
+              </p>
+              <p className="mt-1 whitespace-pre-line text-sm text-foreground/90">{c.comment}</p>
+              <ShareToGroupMenu groupId={group.id} className="mt-2" input={{ kind: 'comment', comment_id: c.id }} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 };
 

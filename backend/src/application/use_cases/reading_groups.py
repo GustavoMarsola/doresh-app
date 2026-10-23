@@ -224,6 +224,8 @@ class ReadingGroupsUseCase:
         _, membership = await self._membership(_user_id(payload_token), group_id)
         if membership.role == LEADER:
             raise _error("reading_group.leader_cannot_leave")
+        # Leaving erases the participation: progress, and what they shared or wrote on the mural
+        await self.repository.group_mural.delete_member_activity(group_id, membership.user_id)
         await self.groups.remove_member(membership)
 
     async def remove_member(self, payload_token: dict, group_id: UUID, member_id: UUID) -> GroupResponse:
@@ -233,6 +235,7 @@ class ReadingGroupsUseCase:
             raise _error("reading_group.member_not_found", status.HTTP_404_NOT_FOUND)
         if target.role == LEADER:
             raise _error("reading_group.cannot_remove_leader")
+        await self.repository.group_mural.delete_member_activity(group.id, target.user_id)
         await self.groups.remove_member(target)
         return await self._detail(group, membership)
 

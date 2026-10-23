@@ -6,6 +6,7 @@ from src.infrastructure.repositories.studies_repository import StudiesRepository
 from src.infrastructure.repositories.bible_repository import BibleRepository
 from src.infrastructure.repositories.reading_plans_repository import ReadingPlansRepository
 from src.infrastructure.repositories.reading_groups_repository import ReadingGroupsRepository
+from src.infrastructure.repositories.reading_group_mural_repository import ReadingGroupMuralRepository
 
 
 class AppRepository:
@@ -15,3 +16,4 @@ class AppRepository:
         self.bible   = BibleRepository(db_session)
         self.reading_plans  = ReadingPlansRepository(db_session)
         self.reading_groups = ReadingGroupsRepository(db_session)
+        self.group_mural    = ReadingGroupMuralRepository(db_session)

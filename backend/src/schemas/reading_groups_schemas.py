@@ -139,3 +139,81 @@ class InvitePreview(BaseModel):
 
 class GroupStudyResponse(BaseModel):
     study: dict
+
+
+# ── Mural da passagem (anotações partilhadas) ──
+
+class PostShareSchema(BaseModel):
+    """
+    Share one of my annotations with the group: a comment (`comment_id`) or a highlight
+    (`book`, `chapter`, `verse_start`..`verse_end`, all of which I highlighted).
+    """
+    model_config = ConfigDict(extra="ignore")
+
+    kind:        Literal["comment", "highlight"]
+    comment_id:  Optional[UUID] = None
+    book:        Optional[str]  = Field(None, min_length=1, max_length=40)
+    chapter:     Optional[int]  = Field(None, ge=1)
+    verse_start: Optional[int]  = Field(None, ge=1)
+    verse_end:   Optional[int]  = Field(None, ge=1)
+
+
+class PostReplySchema(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    text: str = Field(..., min_length=1, max_length=2000)
+
+
+class ShareAuthorOut(BaseModel):
+    name:  Optional[str]  # only when the member chose to be named
+    role:  Literal["leader", "member"]
+    is_me: bool
+
+
+class ShareReplyOut(BaseModel):
+    id:         UUID
+    author:     ShareAuthorOut
+    text:       str
+    created_at: datetime
+
+
+class ShareOut(BaseModel):
+    id:             UUID
+    kind:           Literal["comment", "highlight"]
+    author:         ShareAuthorOut
+    book:           str  # book slug, as in bible_comments
+    chapter:        int
+    verse_start:    int
+    verse_end:      int
+    text:           Optional[str]
+    color:          Optional[str]
+    hidden:         bool  # leader only sees hidden shares (members never receive them)
+    reports:        int   # leader only; 0 for members
+    reported_by_me: bool
+    replies:        List[ShareReplyOut]
+    created_at:     datetime
+
+
+class ShareResponse(BaseModel):
+    share: ShareOut
+
+
+class MuralResponse(BaseModel):
+    shares: List[ShareOut]
+
+
+class MyShareOut(BaseModel):
+    """Where one of my annotations is shared (for the reader and the day page)."""
+    id:          UUID
+    group_id:    UUID
+    group_name:  str
+    kind:        Literal["comment", "highlight"]
+    comment_id:  Optional[UUID]
+    book:        str
+    chapter:     int
+    verse_start: int
+    verse_end:   int
+
+
+class MySharesResponse(BaseModel):
+    shares: List[MyShareOut]

@@ -242,7 +242,20 @@ Um líder cria um grupo a partir de um dos seus planos (conteúdo e ritmo são c
 | `PUT` / `DELETE` | `/{id}/days/{n}/note` | Líder | Nota do dia (`text`, `study_id` de um estudo meu) |
 | `GET` | `/{id}/days/{n}/study` | Bearer | Estudo anexado à nota, para leitura pelos membros |
 
-Erros: 404 `reading_group.not_found`, `day_not_found`, `member_not_found`, `invite_invalid`, `study_not_found`; 403 `reading_group.leader_only`; 410 `reading_group.invite_expired`; 422 `reading_group.consent_required`, `plan_not_found`, `leader_cannot_leave`, `cannot_remove_leader`, `study_not_found` e os erros de ritmo dos planos.
+**Mural da passagem** — um membro partilha, item a item, um comentário ou destaque seu; a cópia fica presa ao versículo e aparece no dia do grupo cujo trecho a contém. A anotação original continua privada; desfazer a partilha, sair do grupo ou apagar o comentário tira-a do mural. Só a referência e o texto da pessoa são guardados, nunca o texto bíblico.
+
+| Método | Rota | Auth | Descrição |
+|---|---|---|---|
+| `GET` | `/my-shares` | Bearer | Onde cada anotação minha está partilhada |
+| `GET` | `/{id}/days/{n}/mural` | Bearer | Partilhas presas aos versículos do dia (ocultas só para o líder) |
+| `POST` | `/{id}/shares` | Bearer | Partilha (`kind` `comment` + `comment_id`, ou `highlight` + `book`, `chapter`, `verse_start`, `verse_end`); 200 se já estava partilhada |
+| `DELETE` | `/{id}/shares/{share_id}` | Autor | Desfaz a partilha |
+| `POST` | `/{id}/shares/{share_id}/replies` | Bearer | Responde (`text`) |
+| `DELETE` | `/{id}/shares/{share_id}/replies/{reply_id}` | Autor ou líder | Remove uma resposta |
+| `PUT` / `DELETE` | `/{id}/shares/{share_id}/hidden` | Líder | Oculta / mostra de novo |
+| `POST` | `/{id}/shares/{share_id}/report` | Bearer | Denuncia (uma por membro; só o líder vê a contagem) |
+
+Erros: 404 `reading_group.not_found`, `day_not_found`, `member_not_found`, `invite_invalid`, `study_not_found`, `share_not_found`, `reply_not_found`; 403 `reading_group.leader_only`; 410 `reading_group.invite_expired`; 422 `reading_group.consent_required`, `plan_not_found`, `leader_cannot_leave`, `cannot_remove_leader`, `study_not_found`, `annotation_not_found` e os erros de ritmo dos planos.
 
 #### Bíblia — `/api/v1/bible`
 
