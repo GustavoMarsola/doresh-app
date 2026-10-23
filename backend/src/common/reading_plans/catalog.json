@@ -1,0 +1,52 @@
+[
+  {
+    "slug": "biblia-em-1-ano",
+    "title": "Bíblia em 1 ano",
+    "description": "Uma leitura do Antigo e outra do Novo Testamento por dia, de Gênesis a Apocalipse.",
+    "tracks": [
+      { "from": "Gênesis", "to": "Malaquias" },
+      { "from": "Mateus", "to": "Apocalipse" }
+    ],
+    "default_days": 365,
+    "default_weekdays": [1, 2, 3, 4, 5, 6, 7]
+  },
+  {
+    "slug": "novo-testamento-260-dias",
+    "title": "Novo Testamento em 260 dias",
+    "description": "Cerca de um capítulo por dia útil. O fim de semana fica livre para pôr a leitura em dia ou meditar.",
+    "tracks": [
+      { "from": "Mateus", "to": "Apocalipse" }
+    ],
+    "default_days": 364,
+    "default_weekdays": [1, 2, 3, 4, 5]
+  },
+  {
+    "slug": "evangelhos",
+    "title": "Os Evangelhos em 3 meses",
+    "description": "Mateus, Marcos, Lucas e João, cerca de um capítulo por dia.",
+    "tracks": [
+      { "from": "Mateus", "to": "João" }
+    ],
+    "default_days": 90,
+    "default_weekdays": [1, 2, 3, 4, 5, 6, 7]
+  },
+  {
+    "slug": "salmos-e-proverbios",
+    "title": "Salmos e Provérbios",
+    "description": "Um salmo e um trecho de Provérbios por dia, para orar e aprender sabedoria.",
+    "tracks": [
+      { "from": "Salmos", "to": "Salmos" },
+      { "from": "Provérbios", "to": "Provérbios" }
+    ],
+    "default_days": 150,
+    "default_weekdays": [1, 2, 3, 4, 5, 6, 7]
+  },
+  {
+    "slug": "um-livro",
+    "title": "Um livro da Bíblia",
+    "description": "Escolha um livro e leia-o do começo ao fim no seu ritmo.",
+    "tracks": "book",
+    "default_days": null,
+    "default_weekdays": [1, 2, 3, 4, 5, 6, 7]
+  }
+]

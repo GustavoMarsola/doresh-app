@@ -175,7 +175,7 @@ Base: `/api/v1` · Docs interativas: `/api/docs`
 | `POST` | `/logout` | Bearer | Encerra a sessão e revoga o refresh token |
 | `POST` | `/password/forgot` | api-key | Envia por e-mail um link de redefinição de senha (mesma resposta para e-mail não cadastrado) |
 | `POST` | `/password/reset` | api-key | Define a nova senha com o token do link (uso único) e encerra todas as sessões |
-| `DELETE` | `/account` | Bearer | Exclui de vez a conta e todos os dados do usuário; corpo `{"password": "..."}` |
+| `DELETE` | `/account` | Bearer | Exclui de vez a conta e todos os dados do usuário (incluindo planos de leitura); corpo `{"password": "..."}` |
 
 Erros de autenticação (401, campo `detail`):
 
@@ -202,6 +202,23 @@ Outros erros de conta (campo `detail`):
 | `GET` | `/studies` | Bearer | Lista estudos com paginação e ordenação |
 | `PATCH` | `/study` | Bearer | Atualiza título, seções ou referências |
 | `DELETE` | `/study/{id}` | Bearer | Soft-delete (marca como inativo) |
+
+#### Planos de leitura — `/api/v1/reading-plans`
+
+Os planos padrão vivem em `backend/src/common/reading_plans/catalog.json` (só referências). O ritmo (início, duração, dias da semana) define quantos dias de leitura há; cada trecho é dividido nesses dias equilibrando o número de versículos. O progresso guarda os **versículos lidos**, por isso mudar o ritmo nunca apaga o que foi lido.
+
+| Método | Rota | Auth | Descrição |
+|---|---|---|---|
+| `GET` | `/catalog` | Bearer | Planos padrão disponíveis |
+| `GET` | `` | Bearer | Meus planos, com progresso e próxima leitura |
+| `POST` | `` | Bearer | Começa um plano (`plan_slug`, e opcionalmente `book`, `start_date`, `total_days`, `weekdays` ISO 1–7) |
+| `GET` | `/{id}` | Bearer | Plano com todos os dias e o estado de cada um (`read`, `partial`, `unread`) |
+| `PATCH` | `/{id}` | Bearer | Muda o ritmo, mantendo o progresso |
+| `PUT` / `DELETE` | `/{id}/days/{n}/read` | Bearer | Marca ou desmarca o dia `n` como lido |
+| `POST` | `/{id}/realign` | Bearer | Põe a próxima leitura em `today` (data do cliente), sem mudar o número de dias |
+| `DELETE` | `/{id}` | Bearer | Remove o plano e o progresso |
+
+Erros (campo `detail`): 404 `reading_plan.not_found` / `reading_plan.day_not_found`; 422 `reading_plan.unknown_plan`, `invalid_book`, `invalid_duration`, `invalid_weekdays`, `too_many_days`.
 
 #### Bíblia — `/api/v1/bible`
 
