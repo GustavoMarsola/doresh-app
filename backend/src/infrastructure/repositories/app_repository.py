@@ -4,6 +4,7 @@ from src.infrastructure.repositories import get_session_repo
 from src.infrastructure.repositories.users_repository import UsersRepository
 from src.infrastructure.repositories.studies_repository import StudiesRepository
 from src.infrastructure.repositories.bible_repository import BibleRepository
+from src.infrastructure.repositories.reading_plans_repository import ReadingPlansRepository
 
 
 class AppRepository:
@@ -11,3 +12,4 @@ class AppRepository:
         self.users   = UsersRepository(db_session)
         self.studies = StudiesRepository(db_session)
         self.bible   = BibleRepository(db_session)
+        self.reading_plans = ReadingPlansRepository(db_session)
