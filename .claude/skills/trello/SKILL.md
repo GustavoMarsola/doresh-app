@@ -24,7 +24,7 @@ description: |
 
 | Board | ID | Use |
 |---|---|---|
-| **Doresh** ❓ | ❓ `<fill on first use>` | Product backlog: the only board this skill writes to |
+| **Doresh** | `6adb7d5ee4b4bf7605fc779d` ([link](https://trello.com/b/otXFDeKH)) | Product backlog: the only board this skill writes to |
 | Impera Energy | `6abd38af92e4d48d570676e0` | **Another project. Never read or write.** Blocked by `trello.sh` |
 | RZ Solar - Tech | `6a3ce14af751db83bdf94e9d` | **Another company. Never read or write.** Blocked by `trello.sh` |
 
@@ -35,11 +35,19 @@ description: |
    `$T POST /boards name="Doresh" defaultLists=false`)
 3. Record its id in the table above and fill the lists table below
 
-### Current lists (Doresh) ❓
+### Current lists (Doresh)
 
 | List | ID |
 |---|---|
-| <fill> | <fill> |
+| Ideias | `6adb7d642c3eb2c55a33c4a6` |
+| Backlog | `6adb7d65b353048e15b59a48` |
+| Em andamento | `6adb7d66312c550f16385cf9` |
+| Em revisão | `6adb7d679bcefeff79d7b4ce` |
+| Concluído | `6adb7d681e7ecc378e45f015` |
+
+Lean flow chosen by the founder (2026-10-23): one card = one PR-sized slice, acceptance criteria
+written as test steps. Labels: `Funcionalidade` · `Bug` · `Técnico` · `D1`–`D5` · `S`/`M`/`L`
+(ids via `$T GET /boards/$B/labels fields=name,color`).
 
 Suggested flow 🧪 (the `product-owner` proposes; create only after the user approves):
 `Ideias` → `Discovery` → `Backlog` → `Pronto para Dev` → `Em andamento` → `Em revisão` → `Concluído`.
