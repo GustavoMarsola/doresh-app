@@ -14,6 +14,11 @@ from src.infrastructure.database.models.users_models import (
 from src.infrastructure.database.models.studies_models import StudyModel, StudySectionModel, StudyReferenceModel
 from src.infrastructure.database.models.ai_models import ChatAIModel
 from src.infrastructure.database.models.reading_plans_models import UserReadingPlanModel
+from src.infrastructure.database.models.reading_groups_models import (
+    ReadingGroupModel,
+    ReadingGroupMemberModel,
+    ReadingGroupNoteModel,
+)
 from src.infrastructure.database.models.bible_models import BibleHighlightsModel, BibleCommentsModel
 from src.common.utilities import set_local_time
 
@@ -204,6 +209,14 @@ class UsersRepository:
             await self.db_session.execute(select(SessionsModel.id).where(SessionsModel.user_id == user_id))
         ).scalars().all()
         user_studies = select(StudyModel.id).where(StudyModel.user_id == user_id)
+
+        # Groups the user leads go away with everything in them; in other groups only their own
+        # participation (membership, progress) is erased — the group and the other members stay.
+        led_groups = select(ReadingGroupModel.id).where(ReadingGroupModel.leader_id == user_id)
+        await self.db_session.execute(delete(ReadingGroupNoteModel).where(ReadingGroupNoteModel.group_id.in_(led_groups)))
+        await self.db_session.execute(delete(ReadingGroupMemberModel).where(ReadingGroupMemberModel.group_id.in_(led_groups)))
+        await self.db_session.execute(delete(ReadingGroupMemberModel).where(ReadingGroupMemberModel.user_id == user_id))
+        await self.db_session.execute(delete(ReadingGroupModel).where(ReadingGroupModel.leader_id == user_id))
 
         await self.db_session.execute(delete(ChatAIModel).where(ChatAIModel.session_id.in_(session_ids)))
         await self.db_session.execute(delete(StudySectionModel).where(StudySectionModel.study_id.in_(user_studies)))

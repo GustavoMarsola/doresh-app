@@ -84,6 +84,23 @@ class StudiesRepository:
         result = await self.db_session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_active_study(self, study_id: UUID) -> StudyModel | None:
+        """Estudo ativo de qualquer pessoa: só para leitura onde o dono o partilhou (ex.: nota de grupo)."""
+        stmt = (
+            select(StudyModel)
+            .where(StudyModel.id == study_id, StudyModel.active == True)
+            .execution_options(populate_existing=True)
+        )
+        result = await self.db_session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_active_titles(self, study_ids: list[UUID]) -> dict[UUID, str]:
+        if not study_ids:
+            return {}
+        stmt = select(StudyModel.id, StudyModel.title).where(StudyModel.id.in_(study_ids), StudyModel.active == True)
+        result = await self.db_session.execute(stmt)
+        return {study_id: title for study_id, title in result.all()}
+
     async def update_study(self, user_id: UUID, data: PatchStudySchema) -> StudyModel | None:
         study = await self.get_user_study(user_id, data.study_id)
         if not study:

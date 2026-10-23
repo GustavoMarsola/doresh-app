@@ -5,6 +5,7 @@ erases the user and everything they own — and nothing that belongs to anyone e
 from sqlalchemy import func, select
 
 from src.infrastructure.database.models.bible_models import BibleCommentsModel, BibleHighlightsModel
+from src.infrastructure.database.models.reading_groups_models import ReadingGroupMemberModel
 from src.infrastructure.database.models.reading_plans_models import UserReadingPlanModel
 from src.infrastructure.database.models.studies_models import StudyModel
 from src.infrastructure.database.models.users_models import SessionsModel, UsersModel
@@ -17,11 +18,13 @@ STUDY_URL        = "/api/v1/study"
 HIGHLIGHTS_URL   = "/api/v1/bible/highlights"
 COMMENTS_URL     = "/api/v1/bible/comments"
 
-OWNED_MODELS = (StudyModel, BibleHighlightsModel, BibleCommentsModel, UserReadingPlanModel, SessionsModel)
+OWNED_MODELS = (
+    StudyModel, BibleHighlightsModel, BibleCommentsModel, UserReadingPlanModel, ReadingGroupMemberModel, SessionsModel,
+)
 
 
 async def add_content(client) -> None:
-    """One study (with a section and a reference), one highlight, one comment and one reading plan."""
+    """One study (with a section and a reference), one highlight, one comment, one reading plan and one group led."""
     study = await client.post(STUDY_URL, json={
         "title":      "Estudo de teste",
         "sections":   [{"title": "Ponto", "text": "Texto do ponto"}],
@@ -32,8 +35,11 @@ async def add_content(client) -> None:
         "book": "João", "chapter": 3, "verse_start": 16, "verse_end": 17, "comment": "Comentário de teste",
     })
     plan      = await client.post("/api/v1/reading-plans", json={"plan_slug": "evangelhos"})
-    responses = (study, highlight, comment, plan)
-    assert [r.status_code for r in responses] == [201, 200, 201, 201], [r.text for r in responses]
+    group     = await client.post("/api/v1/reading-groups", json={
+        "name": "Grupo de teste", "plan_id": plan.json()["plan"]["id"], "consent": True,
+    })
+    responses = (study, highlight, comment, plan, group)
+    assert [r.status_code for r in responses] == [201, 200, 201, 201, 201], [r.text for r in responses]
 
 
 async def owned_rows(user_id) -> dict[str, int]:
@@ -57,7 +63,10 @@ class TestDeleteAccount:
         response = await delete_account(client, user_a.password)
         assert (response.status_code, await owned_rows(user_a.user_id)) == (
             200,
-            {"studies": 0, "bible_highlights": 0, "bible_comments": 0, "user_reading_plans": 0, "sessions": 0, "users": 0},
+            {
+                "studies": 0, "bible_highlights": 0, "bible_comments": 0, "user_reading_plans": 0,
+                "reading_group_members": 0, "sessions": 0, "users": 0,
+            },
         )
 
     async def test_other_users_data_is_kept(self, client_as, user_a, user_b):
@@ -67,8 +76,21 @@ class TestDeleteAccount:
         await add_content(client_b)
         await delete_account(client_a, user_a.password)
         assert await owned_rows(user_b.user_id) == {
-            "studies": 1, "bible_highlights": 1, "bible_comments": 1, "user_reading_plans": 1, "sessions": 1, "users": 1,
+            "studies": 1, "bible_highlights": 1, "bible_comments": 1, "user_reading_plans": 1,
+            "reading_group_members": 1, "sessions": 1, "users": 1,
         }
+
+    async def test_leaving_a_group_led_by_someone_else_keeps_the_group(self, client_as, user_a, user_b):
+        """A deleted member disappears from the group; the leader's group and the other members stay."""
+        client_a = await client_as(user_a)
+        client_b = await client_as(user_b)
+        await add_content(client_b)
+        group_id = (await client_b.get("/api/v1/reading-groups")).json()["groups"][0]["id"]
+        token    = (await client_b.post(f"/api/v1/reading-groups/{group_id}/invite", json={})).json()["group"]["invite"]["token"]
+        await client_a.post(f"/api/v1/reading-groups/invites/{token}/join", json={"consent": True})
+        await delete_account(client_a, user_a.password)
+        group = (await client_b.get(f"/api/v1/reading-groups/{group_id}")).json()["group"]
+        assert (group["members_count"], (await owned_rows(user_a.user_id))["reading_group_members"]) == (1, 0)
 
     async def test_token_and_login_stop_working(self, client_as, api_key_client, user_a):
         client = await client_as(user_a)

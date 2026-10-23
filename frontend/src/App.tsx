@@ -14,6 +14,10 @@ import { ReadingPlans } from "@/pages/ReadingPlans";
 import { ReadingPlan } from "@/pages/ReadingPlan";
 import { ReadingPlanDay } from "@/pages/ReadingPlanDay";
 import { PlanGenerator } from "@/pages/PlanGenerator";
+import { ReadingGroup } from "@/pages/ReadingGroup";
+import { ReadingGroupDay } from "@/pages/ReadingGroupDay";
+import { ReadingGroupStudy } from "@/pages/ReadingGroupStudy";
+import { JoinReadingGroup } from "@/pages/JoinReadingGroup";
 import { Login } from "@/pages/Login";
 import { Register } from '@/pages/Register';
 import { ForgotPassword } from '@/pages/ForgotPassword';
@@ -40,6 +44,8 @@ const App = () => (
           <Route path="/registrar" element={<Register />} /> 
           <Route path="/recuperar" element={<ForgotPassword />} />
           <Route path="/redefinir-senha" element={<ResetPassword />} />
+          {/* Fora do ProtectedRoute: guarda o convite e manda ao login quem ainda não entrou */}
+          <Route path="/grupos/entrar/:token" element={<JoinReadingGroup />} />
           <Route element={<ProtectedRoute />}>
               <Route path="/home" element={<ChatProvider> <Layout><Dashboard /></Layout> </ChatProvider>} />
               <Route path="/ler" element={<ChatProvider> <Layout fullBleed><ReadBible /></Layout> </ChatProvider>} />
@@ -47,6 +53,9 @@ const App = () => (
               <Route path="/planos/novo" element={<ChatProvider> <Layout><PlanGenerator /></Layout> </ChatProvider>} />
               <Route path="/planos/:id" element={<ChatProvider> <Layout><ReadingPlan /></Layout> </ChatProvider>} />
               <Route path="/planos/:id/dia/:day" element={<ChatProvider> <Layout><ReadingPlanDay /></Layout> </ChatProvider>} />
+              <Route path="/grupos/:id" element={<ChatProvider> <Layout><ReadingGroup /></Layout> </ChatProvider>} />
+              <Route path="/grupos/:id/dia/:day" element={<ChatProvider> <Layout><ReadingGroupDay /></Layout> </ChatProvider>} />
+              <Route path="/grupos/:id/dia/:day/estudo" element={<ChatProvider> <Layout><ReadingGroupStudy /></Layout> </ChatProvider>} />
               <Route path="/estudos" element={<ChatProvider> <Layout><Library /></Layout> </ChatProvider>} />
               <Route path="/estudos/novo" element={<ChatProvider> <Layout showAssistant={false}><StudyEditor /></Layout> </ChatProvider>} />
               <Route path="/estudos/:id" element={<ChatProvider> <Layout><StudyView /></Layout> </ChatProvider>} />
