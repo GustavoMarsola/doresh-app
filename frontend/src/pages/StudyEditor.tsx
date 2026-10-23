@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
@@ -23,7 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { ToastAction } from '@/components/ui/toast';
 import { ReferenceDialog } from '@/components/studies/ReferenceDialog';
-import { AnnotationsDialog, type AnnotationImport } from '@/components/studies/AnnotationsDialog';
+import { AnnotationsDialog, type AnnotationImport, type StudyPrefill } from '@/components/studies/AnnotationsDialog';
 import { useToast } from '@/hooks/use-toast';
 import {
   StudyNotFoundError,
@@ -108,8 +108,17 @@ export const StudyEditor: React.FC = () => {
 
   const [studyId, setStudyId] = React.useState<string | undefined>(routeId);
   const studyQuery = useStudy(routeId);
-  const [draft, setDraft] = React.useState<Draft | null>(routeId ? null : emptyDraft);
-  const [status, setStatus] = React.useState<SaveStatus>('idle');
+  // Estudo novo vindo de outra tela (ex.: dia de um plano) com título, passagens e anotações
+  const location = useLocation();
+  const prefill = routeId ? undefined : (location.state as { prefill?: StudyPrefill } | null)?.prefill;
+  const [draft, setDraft] = React.useState<Draft | null>(() => {
+    if (routeId) return null;
+    if (!prefill) return emptyDraft();
+    const base = { ...emptyDraft(), title: prefill.title };
+    return { ...base, ...withAnnotations(base, prefill.items) };
+  });
+  // Pré-preenchido já tem título: salva logo, como qualquer alteração
+  const [status, setStatus] = React.useState<SaveStatus>(prefill ? 'unsaved' : 'idle');
   const [savedAt, setSavedAt] = React.useState<Date | null>(null);
   const [titleError, setTitleError] = React.useState(false);
   const [referenceOpen, setReferenceOpen] = React.useState(false);

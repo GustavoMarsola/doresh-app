@@ -12,6 +12,7 @@ import { ReadBible } from "@/pages/ReadBible";
 import { Library } from "@/pages/Library";
 import { ReadingPlans } from "@/pages/ReadingPlans";
 import { ReadingPlan } from "@/pages/ReadingPlan";
+import { ReadingPlanDay } from "@/pages/ReadingPlanDay";
 import { Login } from "@/pages/Login";
 import { Register } from '@/pages/Register';
 import { ForgotPassword } from '@/pages/ForgotPassword';
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/ler" element={<ChatProvider> <Layout fullBleed><ReadBible /></Layout> </ChatProvider>} />
               <Route path="/planos" element={<ChatProvider> <Layout><ReadingPlans /></Layout> </ChatProvider>} />
               <Route path="/planos/:id" element={<ChatProvider> <Layout><ReadingPlan /></Layout> </ChatProvider>} />
+              <Route path="/planos/:id/dia/:day" element={<ChatProvider> <Layout><ReadingPlanDay /></Layout> </ChatProvider>} />
               <Route path="/estudos" element={<ChatProvider> <Layout><Library /></Layout> </ChatProvider>} />
               <Route path="/estudos/novo" element={<ChatProvider> <Layout showAssistant={false}><StudyEditor /></Layout> </ChatProvider>} />
               <Route path="/estudos/:id" element={<ChatProvider> <Layout><StudyView /></Layout> </ChatProvider>} />

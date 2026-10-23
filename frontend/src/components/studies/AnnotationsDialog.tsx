@@ -24,6 +24,12 @@ export interface AnnotationImport {
   section?: { title: string; text: string };
 }
 
+/** Estudo novo já preenchido, passado em `navigate('/estudos/novo', { state: { prefill } })`. */
+export interface StudyPrefill {
+  title: string;
+  items: AnnotationImport[];
+}
+
 interface AnnotationsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
