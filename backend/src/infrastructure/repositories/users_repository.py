@@ -2,7 +2,7 @@ from enum import Enum
 from uuid import UUID
 from datetime import date, datetime
 from fastapi import Depends
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.repositories import get_session_repo
 from src.infrastructure.database.models.users_models import (
@@ -11,7 +11,8 @@ from src.infrastructure.database.models.users_models import (
     AddressModel,
     UsersVerificationModel,
 )
-from src.infrastructure.database.models.studies_models import StudyModel
+from src.infrastructure.database.models.studies_models import StudyModel, StudySectionModel, StudyReferenceModel
+from src.infrastructure.database.models.ai_models import ChatAIModel
 from src.infrastructure.database.models.bible_models import BibleHighlightsModel, BibleCommentsModel
 from src.common.utilities import set_local_time
 
@@ -168,6 +169,53 @@ class UsersRepository:
             await self.db_session.commit()
             await self.db_session.refresh(session)
         return session
+
+    async def update_password(self, user_id: UUID, password_hash: str) -> None:
+        user = await self.get_user_by_id(user_id)
+        if user:
+            user.password = password_hash
+            await self.db_session.commit()
+
+    async def revoke_all_sessions(self, user_id: UUID, message: str) -> list[UUID]:
+        """Log out every active session of the user. Returns the ids of the sessions revoked."""
+        stmt = select(SessionsModel).where(
+            SessionsModel.user_id == user_id,
+            SessionsModel.logout_at.is_(None),
+        )
+        result   = await self.db_session.execute(stmt)
+        sessions = result.scalars().all()
+        now      = set_local_time()
+        for session in sessions:
+            self._revoke(session, message, now)
+        await self.db_session.commit()
+        return [session.id for session in sessions]
+
+    async def delete_user_and_data(self, user_id: UUID) -> list[UUID]:
+        """
+        Permanently erase the user and everything they own, in one transaction.
+        Returns the ids of the user's sessions so their cached state can be revoked.
+        """
+        user = await self.get_user_by_id(user_id)
+        if not user:
+            return []
+
+        session_ids = (
+            await self.db_session.execute(select(SessionsModel.id).where(SessionsModel.user_id == user_id))
+        ).scalars().all()
+        user_studies = select(StudyModel.id).where(StudyModel.user_id == user_id)
+
+        await self.db_session.execute(delete(ChatAIModel).where(ChatAIModel.session_id.in_(session_ids)))
+        await self.db_session.execute(delete(StudySectionModel).where(StudySectionModel.study_id.in_(user_studies)))
+        await self.db_session.execute(delete(StudyReferenceModel).where(StudyReferenceModel.study_id.in_(user_studies)))
+        for model in (StudyModel, BibleHighlightsModel, BibleCommentsModel, SessionsModel, UsersVerificationModel):
+            await self.db_session.execute(delete(model).where(model.user_id == user_id))
+
+        address_id = user.address_id
+        await self.db_session.execute(delete(UsersModel).where(UsersModel.id == user_id))
+        if address_id:
+            await self.db_session.execute(delete(AddressModel).where(AddressModel.id == address_id))
+        await self.db_session.commit()
+        return list(session_ids)
 
     @staticmethod
     def _revoke(session: SessionsModel, message: str, now: datetime) -> None:

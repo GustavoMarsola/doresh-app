@@ -1,9 +1,12 @@
 import React from 'react';
-import { User, Heart, ExternalLink } from 'lucide-react';
+import { User, Heart, ExternalLink, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { DeleteAccountDialog } from '@/components/auth/DeleteAccountDialog';
 
 export const Profile: React.FC = () => {
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+
   return (
     <div className="dashboard-content p-6 space-y-6">
       <div className="flex items-center space-x-2">
@@ -38,6 +41,25 @@ export const Profile: React.FC = () => {
           </p>
         </CardContent>
       </Card>
+
+      <Card className="border-destructive/40">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Trash2 className="h-5 w-5 text-destructive" />
+            <span>Excluir conta</span>
+          </CardTitle>
+          <CardDescription>
+            Apaga de forma permanente sua conta e tudo o que você guardou: estudos, destaques e comentários.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" className="w-full sm:w-auto border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setDeleteOpen(true)}>
+            Excluir minha conta
+          </Button>
+        </CardContent>
+      </Card>
+
+      <DeleteAccountDialog open={deleteOpen} onOpenChange={setDeleteOpen} />
     </div>
   );
 };

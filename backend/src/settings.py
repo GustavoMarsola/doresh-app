@@ -29,6 +29,8 @@ class AppSettings(_EnvFileSettings):
     x_api_key:   str  = Field(...,               validation_alias="X_API_KEY")
     environment: str  = Field("development",     validation_alias="ENVIRONMENT")
     allowed_origins: List[str] = Field(["*"],    validation_alias="ALLOWED_ORIGINS")
+    # Public address of the web app, used to build links sent by e-mail (e.g. password reset)
+    public_url:  str  = Field("http://localhost:5173", validation_alias="APP_PUBLIC_URL")
     # FastAPI settings
     debug:                    bool = Field(True, validation_alias="DEBUG")
     workers:                   int = Field(1,    validation_alias="FASTAPI_WORKERS")
@@ -43,6 +45,7 @@ class AuthSettings(_EnvFileSettings):
     email_token_expire_minutes:  int = Field(240,  validation_alias="EMAIL_TOKEN_EXPIRE_MINUTES")
     refresh_token_expire_days:   int = Field(30,   validation_alias="REFRESH_TOKEN_EXPIRE_DAYS")
     session_cache_ttl_seconds:   int = Field(60,   validation_alias="SESSION_CACHE_TTL_SECONDS")
+    password_reset_expire_minutes: int = Field(30, validation_alias="PASSWORD_RESET_EXPIRE_MINUTES")
 
 
 class DatabaseSettings(_EnvFileSettings):

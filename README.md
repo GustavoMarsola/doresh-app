@@ -173,6 +173,9 @@ Base: `/api/v1` · Docs interativas: `/api/docs`
 | `POST` | `/refresh` | api-key | Troca o refresh token por um novo par (rotação; reuso revoga a sessão) |
 | `GET` | `/profile` | Bearer | Highlights e comentários do usuário |
 | `POST` | `/logout` | Bearer | Encerra a sessão e revoga o refresh token |
+| `POST` | `/password/forgot` | api-key | Envia por e-mail um link de redefinição de senha (mesma resposta para e-mail não cadastrado) |
+| `POST` | `/password/reset` | api-key | Define a nova senha com o token do link (uso único) e encerra todas as sessões |
+| `DELETE` | `/account` | Bearer | Exclui de vez a conta e todos os dados do usuário; corpo `{"password": "..."}` |
 
 Erros de autenticação (401, campo `detail`):
 
@@ -183,6 +186,13 @@ Erros de autenticação (401, campo `detail`):
 | `auth.invalid_token` | Assinatura inválida, tipo diferente de `access` ou claims ausentes |
 | `auth.session_revoked` | Sessão encerrada (logout ou reuso de refresh token) ou inexistente |
 | `auth.invalid_refresh_token` | Refresh token inválido, expirado, já usado ou de sessão encerrada |
+
+Outros erros de conta (campo `detail`):
+
+| Status | Código | Quando |
+|---|---|---|
+| 400 | `auth.invalid_reset_token` | Link de redefinição inválido, expirado, já usado ou substituído por um pedido mais novo |
+| 403 | `account.invalid_password` | Senha errada ao confirmar a exclusão da conta |
 
 #### Estudos — `/api/v1`
 

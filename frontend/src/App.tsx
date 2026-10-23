@@ -12,6 +12,8 @@ import { ReadBible } from "@/pages/ReadBible";
 import { Library } from "@/pages/Library";
 import { Login } from "@/pages/Login";
 import { Register } from '@/pages/Register';
+import { ForgotPassword } from '@/pages/ForgotPassword';
+import { ResetPassword } from '@/pages/ResetPassword';
 import { Dashboard } from "@/pages/Dashboard";
 import { Profile} from "@/pages/Profile"
 import { Ruach } from "@/pages/Ruach"
@@ -32,6 +34,8 @@ const App = () => (
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registrar" element={<Register />} /> 
+          <Route path="/recuperar" element={<ForgotPassword />} />
+          <Route path="/redefinir-senha" element={<ResetPassword />} />
           <Route element={<ProtectedRoute />}>
               <Route path="/home" element={<ChatProvider> <Layout><Dashboard /></Layout> </ChatProvider>} />
               <Route path="/ler" element={<ChatProvider> <Layout fullBleed><ReadBible /></Layout> </ChatProvider>} />
