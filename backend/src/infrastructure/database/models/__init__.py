@@ -5,6 +5,11 @@ from src.infrastructure.database.models.bible_models import (
     BibleCommentsModel,
 )
 from src.infrastructure.database.models.reading_plans_models import UserReadingPlanModel
+from src.infrastructure.database.models.reading_groups_models import (
+    ReadingGroupModel,
+    ReadingGroupMemberModel,
+    ReadingGroupNoteModel,
+)
 from src.infrastructure.database.models.studies_models import (
     StudyModel,
     StudySectionModel,

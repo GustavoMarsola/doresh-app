@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/ui/logo';
 import { useToast } from '@/hooks/use-toast';
+import { takePendingInvite } from '@/lib/readingGroups';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, Loader2, Mail, Lock } from 'lucide-react';
 
@@ -33,7 +34,8 @@ export const Login: React.FC = () => {
       if (!response.ok) throw new Error('Login failed');
       const data = await response.json();
       localStorage.setItem('token', data.token);
-      navigate('/home');
+      const invite = takePendingInvite();
+      navigate(invite ? `/grupos/entrar/${invite}` : '/home');
     } catch (error) {
       toast({
         title: 'Erro ao fazer login',

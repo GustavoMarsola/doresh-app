@@ -221,6 +221,29 @@ Os planos padrão vivem em `backend/src/common/reading_plans/catalog.json` (só 
 
 Erros (campo `detail`): 404 `reading_plan.not_found` / `reading_plan.day_not_found`; 422 `reading_plan.unknown_plan`, `invalid_book`, `invalid_books`, `invalid_duration`, `invalid_weekdays`, `too_many_days`.
 
+#### Grupos de leitura — `/api/v1/reading-groups`
+
+Um líder cria um grupo a partir de um dos seus planos (conteúdo e ritmo são copiados) e convida por link. Cada membro marca a própria leitura; o grupo vê o **agregado** ("8 de 12 leram o dia 5") e o nome só de quem escolheu aparecer. Entrar exige consentimento explícito (participar de um grupo de leitura bíblica revela convicção religiosa — dado sensível, LGPD); sair ou ser removido apaga a participação. Quem não é membro recebe 404 em tudo, inclusive por URL direta.
+
+| Método | Rota | Auth | Descrição |
+|---|---|---|---|
+| `GET` | `` | Bearer | Meus grupos, com o meu progresso |
+| `POST` | `` | Bearer | Cria um grupo (`name`, `plan_id` meu, `start_date`, `meeting_weekday`, `consent`, `show_name`) |
+| `GET` | `/invites/{token}` | Bearer | Pré-visualização do convite (plano, líder, participantes) |
+| `POST` | `/invites/{token}/join` | Bearer | Entra no grupo (`consent` obrigatório, `show_name`) |
+| `GET` | `/{id}` | Bearer | Grupo com dias (meu estado + quantos leram), participantes, notas e link de convite (só líder) |
+| `PATCH` | `/{id}` | Líder | Nome, ritmo (mantém o progresso de todos) e dia do encontro |
+| `DELETE` | `/{id}` | Líder | Encerra o grupo (participações e notas) |
+| `POST` / `DELETE` | `/{id}/invite` | Líder | Gera (`days`, padrão 30) ou cancela o link de convite |
+| `PATCH` | `/{id}/members/me` | Bearer | `show_name`: aparecer com nome ao grupo |
+| `DELETE` | `/{id}/members/me` | Bearer | Sair (apaga a participação; o líder não sai) |
+| `DELETE` | `/{id}/members/{member_id}` | Líder | Remove um participante |
+| `PUT` / `DELETE` | `/{id}/days/{n}/read` | Bearer | Marca ou desmarca o meu dia `n` |
+| `PUT` / `DELETE` | `/{id}/days/{n}/note` | Líder | Nota do dia (`text`, `study_id` de um estudo meu) |
+| `GET` | `/{id}/days/{n}/study` | Bearer | Estudo anexado à nota, para leitura pelos membros |
+
+Erros: 404 `reading_group.not_found`, `day_not_found`, `member_not_found`, `invite_invalid`, `study_not_found`; 403 `reading_group.leader_only`; 410 `reading_group.invite_expired`; 422 `reading_group.consent_required`, `plan_not_found`, `leader_cannot_leave`, `cannot_remove_leader`, `study_not_found` e os erros de ritmo dos planos.
+
 #### Bíblia — `/api/v1/bible`
 
 | Método | Rota | Auth | Descrição |

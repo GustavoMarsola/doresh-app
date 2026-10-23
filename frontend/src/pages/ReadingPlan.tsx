@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Check, ChevronDown, Loader2, MoreHorizontal, Settings2, Trash2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Check, ChevronDown, Loader2, MoreHorizontal, Settings2, Trash2, Users } from 'lucide-react';
+import { CreateGroupDialog } from '@/components/groups/CreateGroupDialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -95,6 +96,7 @@ const PlanView: React.FC<{ plan: PlanDetail }> = ({ plan }) => {
   const removePlan = useRemovePlan();
   const [rhythmOpen, setRhythmOpen] = React.useState(false);
   const [removeOpen, setRemoveOpen] = React.useState(false);
+  const [groupOpen, setGroupOpen] = React.useState(false);
 
   const percent = Math.round((plan.days_read / plan.reading_days) * 100);
   const today = todayISO();
@@ -147,6 +149,9 @@ const PlanView: React.FC<{ plan: PlanDetail }> = ({ plan }) => {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={() => { updateRhythm.reset(); setRhythmOpen(true); }}>
                 <Settings2 className="h-4 w-4" /> Ajustar ritmo
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setGroupOpen(true)}>
+                <Users className="h-4 w-4" /> Criar grupo com este plano
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => setRemoveOpen(true)} className="text-destructive focus:text-destructive">
@@ -237,6 +242,8 @@ const PlanView: React.FC<{ plan: PlanDetail }> = ({ plan }) => {
           )
         }
       />
+
+      <CreateGroupDialog open={groupOpen} onOpenChange={setGroupOpen} plan={plan} />
 
       <AlertDialog open={removeOpen} onOpenChange={(next) => !removePlan.isPending && setRemoveOpen(next)}>
         <AlertDialogContent className="rounded-2xl">

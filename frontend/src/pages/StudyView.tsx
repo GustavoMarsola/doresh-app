@@ -135,7 +135,8 @@ export const StudyView: React.FC = () => {
   );
 };
 
-const StudyBody: React.FC<{ study: Study; large?: boolean }> = ({ study, large = false }) => {
+/** Corpo de um estudo (trechos, introdução, pontos, conclusão); também usado na leitura de um estudo partilhado num grupo. */
+export const StudyBody: React.FC<{ study: Study; large?: boolean }> = ({ study, large = false }) => {
   const body = cn('whitespace-pre-wrap leading-relaxed text-foreground', large ? 'text-[1em]' : 'text-[17px]');
   const heading = cn('font-semibold text-foreground', large ? 'mb-3 font-crimson text-[1.25em]' : 'mb-2 text-sm uppercase tracking-wide text-muted-foreground');
   const empty = !study.introduction.trim() && !study.conclusion.trim() && study.sections.length === 0;
