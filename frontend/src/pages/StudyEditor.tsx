@@ -9,6 +9,7 @@ import {
   BookOpen,
   Check,
   CloudOff,
+  Highlighter,
   Loader2,
   Plus,
   Quote,
@@ -22,6 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { ToastAction } from '@/components/ui/toast';
 import { ReferenceDialog } from '@/components/studies/ReferenceDialog';
+import { AnnotationsDialog, type AnnotationImport } from '@/components/studies/AnnotationsDialog';
 import { useToast } from '@/hooks/use-toast';
 import {
   StudyNotFoundError,
@@ -80,6 +82,22 @@ const toInput = (draft: Draft): StudyInput => ({
   references: draft.references,
 });
 
+const sameReference = (a: StudyReference, b: StudyReference) =>
+  a.book === b.book && a.chapter === b.chapter && a.verse_start === b.verse_start && a.verse_end === b.verse_end;
+
+/** Acrescenta as anotações escolhidas: passagens novas no texto base, comentários como pontos. */
+const withAnnotations = (draft: Draft, items: AnnotationImport[]): Partial<Draft> => {
+  const references = [...draft.references];
+  for (const { reference } of items) {
+    if (!references.some((r) => sameReference(r, reference))) references.push(reference);
+  }
+  const imported = items.flatMap(({ section }) => (section ? [{ key: newKey(), ...section }] : []));
+  // O ponto vazio inicial dá lugar aos comentários importados
+  const kept = draft.sections.filter((s) => s.title.trim() || s.text.trim());
+  const sections = imported.length ? [...kept, ...imported] : draft.sections;
+  return { references, sections };
+};
+
 const autoGrow = 'min-h-[7rem] resize-y [field-sizing:content]';
 
 export const StudyEditor: React.FC = () => {
@@ -95,6 +113,7 @@ export const StudyEditor: React.FC = () => {
   const [savedAt, setSavedAt] = React.useState<Date | null>(null);
   const [titleError, setTitleError] = React.useState(false);
   const [referenceOpen, setReferenceOpen] = React.useState(false);
+  const [annotationsOpen, setAnnotationsOpen] = React.useState(false);
 
   const draftRef = React.useRef(draft);
   draftRef.current = draft;
@@ -297,10 +316,16 @@ export const StudyEditor: React.FC = () => {
             <h2 id="refs-heading" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Texto base
             </h2>
-            <Button variant="outline" size="sm" onClick={() => setReferenceOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Adicionar passagem
-            </Button>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setAnnotationsOpen(true)}>
+                <Highlighter className="h-4 w-4" />
+                Minhas anotações
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setReferenceOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Adicionar passagem
+              </Button>
+            </div>
           </div>
           {draft.references.length === 0 ? (
             <button
@@ -407,6 +432,17 @@ export const StudyEditor: React.FC = () => {
         open={referenceOpen}
         onOpenChange={setReferenceOpen}
         onAdd={(ref) => update((d) => ({ references: [...d.references, ref] }))}
+      />
+      <AnnotationsDialog
+        open={annotationsOpen}
+        onOpenChange={setAnnotationsOpen}
+        onImport={(items) => {
+          if (!items.length) return;
+          update((d) => withAnnotations(d, items));
+          toast({
+            title: items.length === 1 ? 'Anotação adicionada ao estudo' : `${items.length} anotações adicionadas ao estudo`,
+          });
+        }}
       />
     </div>
   );
