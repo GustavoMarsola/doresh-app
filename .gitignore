@@ -154,3 +154,6 @@ backend/.env
 venv/
 .venv/
 
+
+# Editor settings (local to each developer)
+.vscode/
