@@ -48,18 +48,26 @@ class PlanDay:
     passages: tuple[Passage, ...]
 
 
+Track = tuple[str, ...]  # book display names, read in this order
+
+
 @dataclass(frozen=True)
 class PlanDefinition:
     slug:             str
     title:            str
     description:      str
-    tracks:           tuple[tuple[str, str], ...] | None  # (from book, to book); None = the user picks a book
+    source:           str  # "catalog": fixed tracks · "book": the user picks one book · "books": the user picks books
+    tracks:           tuple[Track, ...]
     default_days:     int | None
     default_weekdays: tuple[int, ...]
 
     @property
     def needs_book(self) -> bool:
-        return self.tracks is None
+        return self.source == "book"
+
+    @property
+    def needs_books(self) -> bool:
+        return self.source == "books"
 
 
 # ── Bible books and the catalogue ──
@@ -77,21 +85,28 @@ def find_book(name_or_slug: str) -> str | None:
     return next((name for name in canonical_books() if bible_book_slug(name) == slug), None)
 
 
+def book_range(first: str, last: str) -> Track:
+    books = canonical_books()
+    return books[books.index(first):books.index(last) + 1]
+
+
 @lru_cache(maxsize=1)
 def plan_catalog() -> dict[str, PlanDefinition]:
     with open(_DIR / "catalog.json", encoding="utf-8") as f:
         raw = json.load(f)
-    return {
-        item["slug"]: PlanDefinition(
+    plans = {}
+    for item in raw:
+        fixed = isinstance(item["tracks"], list)
+        plans[item["slug"]] = PlanDefinition(
             slug=item["slug"],
             title=item["title"],
             description=item["description"],
-            tracks=None if item["tracks"] == "book" else tuple((t["from"], t["to"]) for t in item["tracks"]),
+            source="catalog" if fixed else item["tracks"],
+            tracks=tuple(book_range(t["from"], t["to"]) for t in item["tracks"]) if fixed else (),
             default_days=item["default_days"],
             default_weekdays=tuple(item["default_weekdays"]),
         )
-        for item in raw
-    }
+    return plans
 
 
 def get_plan(slug: str) -> PlanDefinition:
@@ -101,23 +116,32 @@ def get_plan(slug: str) -> PlanDefinition:
     return plan
 
 
-def plan_tracks(plan: PlanDefinition, book: str | None) -> tuple[tuple[str, str], ...]:
-    if plan.tracks is not None:
+def normalize_books(books: list[str] | tuple[str, ...] | None) -> Track:
+    """Display names in canonical order, without repeats; any unknown book rejects the list."""
+    names = [find_book(b) for b in books or ()]
+    if not names or None in names:
+        raise PlanError("reading_plan.invalid_books")
+    order = canonical_books()
+    return tuple(sorted(set(names), key=order.index))
+
+
+def plan_tracks(plan: PlanDefinition, book: str | None, books: list[str] | None = None) -> tuple[Track, ...]:
+    if plan.source == "catalog":
         return plan.tracks
+    if plan.source == "books":
+        return (normalize_books(books),)
     name = find_book(book) if book else None
     if name is None:
         raise PlanError("reading_plan.invalid_book")
-    return ((name, name),)
+    return ((name,),)
 
 
-def default_total_days(plan: PlanDefinition, book: str | None) -> int:
+def default_total_days(plan: PlanDefinition, book: str | None, books: list[str] | None = None) -> int:
     if plan.default_days:
         return plan.default_days
-    # "Um livro": about one chapter a day, at least a week
-    name = find_book(book) if book else None
-    if name is None:
-        raise PlanError("reading_plan.invalid_book")
-    return max(MIN_TOTAL_DAYS, len(get_verse_counts(bible_book_slug(name))))
+    # Books chosen by the user: about one chapter a day, at least a week
+    chapters = sum(len(get_verse_counts(bible_book_slug(name))) for track in plan_tracks(plan, book, books) for name in track)
+    return min(MAX_TOTAL_DAYS, max(MIN_TOTAL_DAYS, chapters))
 
 
 @dataclass(frozen=True)
@@ -128,11 +152,9 @@ class _Chapter:
     verses: int
 
 
-def _track_chapters(first: str, last: str) -> list[_Chapter]:
-    books = canonical_books()
-    start, end = books.index(first), books.index(last)
+def _track_chapters(track: Track) -> list[_Chapter]:
     chapters: list[_Chapter] = []
-    for name in books[start:end + 1]:
+    for name in track:
         slug = bible_book_slug(name)
         for number, verses in enumerate(get_verse_counts(slug), start=1):
             chapters.append(_Chapter(name, slug, number, verses))
@@ -141,30 +163,79 @@ def _track_chapters(first: str, last: str) -> list[_Chapter]:
 
 # ── Splitting a track into days ──
 
-def _split_by_chapters(chapters: list[_Chapter], days: int) -> list[list[Passage]]:
-    """Whole chapters per day; day boundaries placed where the running verse total is closest to even."""
+def _units(chapters: list[_Chapter], days: int) -> list[Passage]:
+    """
+    Chapters as reading units; a chapter well above a day's share (Salmo 119 in a short plan)
+    is cut into about-a-day pieces, so one day never carries it alone.
+    """
+    target = sum(c.verses for c in chapters) / days
+    units: list[Passage] = []
+    for c in chapters:
+        # a chapter clearly longer than a day (≥ 1.3×) is cut, so short chapters can share the other days
+        parts = max(2, round(c.verses / target)) if c.verses >= 1.3 * target else 1
+        for k in range(parts):
+            start = round(c.verses * k / parts) + 1
+            end   = round(c.verses * (k + 1) / parts)
+            units.append(Passage(c.book, c.slug, c.number, start, end))
+    return units
+
+
+def _size(passage: Passage) -> int:
+    return passage.verse_end - passage.verse_start + 1
+
+
+def _split_units(units: list[Passage], days: int) -> list[list[Passage]]:
+    """Whole units per day; day boundaries placed where the running verse total is closest to even."""
     cumulative = [0]
-    for chapter in chapters:
-        cumulative.append(cumulative[-1] + chapter.verses)
+    for unit in units:
+        cumulative.append(cumulative[-1] + _size(unit))
     total, bounds = cumulative[-1], [0]
     for k in range(1, days):
         target = total * k / days
         i = bisect_left(cumulative, target)
         if i > 0 and (i == len(cumulative) or target - cumulative[i - 1] <= cumulative[i] - target):
             i -= 1
-        # every day gets at least one chapter
+        # every day gets at least one unit
         i = max(i, bounds[-1] + 1)
-        i = min(i, len(chapters) - (days - k))
+        i = min(i, len(units) - (days - k))
         bounds.append(i)
-    bounds.append(len(chapters))
-    return [
-        [Passage(c.book, c.slug, c.number, 1, c.verses) for c in chapters[a:b]]
-        for a, b in zip(bounds, bounds[1:])
-    ]
+    bounds.append(len(units))
+    _even_out(bounds, cumulative, total / days)
+    return [_merge(units[a:b]) for a, b in zip(bounds, bounds[1:])]
+
+
+def _even_out(bounds: list[int], cumulative: list[int], average: float, passes: int = 4) -> None:
+    """Nudge each boundary by one unit when that brings the two days around it closer to the average."""
+    for _ in range(passes):
+        moved = False
+        for k in range(1, len(bounds) - 1):
+            def spread(b: int) -> float:
+                left, right = cumulative[b] - cumulative[bounds[k - 1]], cumulative[bounds[k + 1]] - cumulative[b]
+                return max(abs(left - average), abs(right - average))
+            best = min(
+                (b for b in (bounds[k] - 1, bounds[k], bounds[k] + 1) if bounds[k - 1] < b < bounds[k + 1]),
+                key=spread,
+            )
+            if spread(best) < spread(bounds[k]):
+                bounds[k], moved = best, True
+        if not moved:
+            break
+
+
+def _merge(passages: list[Passage]) -> list[Passage]:
+    """Join pieces of the same chapter that ended up on the same day."""
+    merged: list[Passage] = []
+    for p in passages:
+        last = merged[-1] if merged else None
+        if last and last.slug == p.slug and last.chapter == p.chapter and last.verse_end + 1 == p.verse_start:
+            merged[-1] = Passage(last.book, last.slug, last.chapter, last.verse_start, p.verse_end)
+        else:
+            merged.append(p)
+    return merged
 
 
 def _split_by_verses(chapters: list[_Chapter], days: int) -> list[list[Passage]]:
-    """Fewer chapters than days: split inside chapters, about the same number of verses per day."""
+    """Fewer units than days: split by verse, about the same number of verses per day."""
     verses = [(c, v) for c in chapters for v in range(1, c.verses + 1)]
     total  = len(verses)
     bounds = [round(total * k / days) for k in range(days + 1)]
@@ -181,12 +252,13 @@ def _split_by_verses(chapters: list[_Chapter], days: int) -> list[list[Passage]]
     return result
 
 
-def split_track(first: str, last: str, days: int) -> list[list[Passage]]:
-    chapters = _track_chapters(first, last)
+def split_track(track: Track, days: int) -> list[list[Passage]]:
+    chapters = _track_chapters(track)
     if days > sum(c.verses for c in chapters):
         raise PlanError("reading_plan.too_many_days")
-    if len(chapters) >= days:
-        return _split_by_chapters(chapters, days)
+    units = _units(chapters, days)
+    if len(units) >= days:
+        return _split_units(units, days)
     return _split_by_verses(chapters, days)
 
 
@@ -221,12 +293,13 @@ def build_schedule(
     start: date,
     total_days: int,
     weekdays: tuple[int, ...],
+    books: list[str] | None = None,
 ) -> list[PlanDay]:
     validate_rhythm(total_days, weekdays)
     dates = reading_dates(start, total_days, weekdays)
     if not dates:
         raise PlanError("reading_plan.invalid_weekdays")
-    tracks = [split_track(first, last, len(dates)) for first, last in plan_tracks(plan, book)]
+    tracks = [split_track(track, len(dates)) for track in plan_tracks(plan, book, books)]
     return [
         PlanDay(index=i + 1, date=day, passages=tuple(p for track in tracks for p in track[i]))
         for i, day in enumerate(dates)

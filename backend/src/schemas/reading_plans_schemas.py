@@ -13,6 +13,8 @@ class PostReadingPlanSchema(BaseModel):
 
     plan_slug:  str                       = Field(..., min_length=1, max_length=60)
     book:       Optional[str]             = Field(None, min_length=1, max_length=40)
+    books:      Optional[List[str]]       = Field(None, min_length=1, max_length=66)  # custom plans
+    title:      Optional[str]             = Field(None, max_length=80)                # custom plans
     start_date: Optional[date]            = None
     total_days: Optional[int]             = Field(None, ge=7, le=1464)
     weekdays:   Optional[List[int]]       = Field(None, min_length=1, max_length=7)
@@ -37,6 +39,7 @@ class ReadingPlanCatalogItem(BaseModel):
     title:            str
     description:      str
     needs_book:       bool
+    needs_books:      bool
     default_days:     Optional[int]
     default_weekdays: List[int]
 
@@ -65,6 +68,7 @@ class ReadingPlanSummary(BaseModel):
     plan_slug:    str
     title:        str
     book:         Optional[str]
+    books:        Optional[List[str]]
     start_date:   date
     end_date:     date
     total_days:   int
@@ -75,6 +79,18 @@ class ReadingPlanSummary(BaseModel):
     completed:    bool
     created_at:   datetime
     updated_at:   datetime
+
+
+class ReadingPlanPreview(BaseModel):
+    """The days a plan would have, from POST /reading-plans/preview (nothing is saved)."""
+    title:        str
+    books:        Optional[List[str]]
+    start_date:   date
+    end_date:     date
+    total_days:   int
+    weekdays:     List[int]
+    reading_days: int
+    days:         List[ReadingPlanDayOut]
 
 
 class ReadingPlansResponse(BaseModel):

@@ -9,11 +9,13 @@ import pytest
 from src.common.reading_plans import (
     ALL_WEEKDAYS,
     PlanError,
+    book_range,
     build_schedule,
     day_status,
     get_plan,
     mark_read,
     mark_unread,
+    normalize_books,
     plan_catalog,
     realigned_start,
     span_for,
@@ -34,7 +36,7 @@ def schedule(slug="biblia-em-1-ano", total_days=365, weekdays=ALL_WEEKDAYS, star
 
 class TestSplitTrack:
     def test_covers_the_whole_track_once_in_order(self):
-        days     = split_track("Mateus", "João", 30)
+        days     = split_track(book_range("Mateus", "João"), 30)
         chapters = [(p.book, p.chapter) for day in days for p in day]
         assert (len(days), chapters[0], chapters[-1], len(chapters), len(set(chapters))) == (
             30, ("Mateus", 1), ("João", 21), 89, 89,
@@ -42,16 +44,16 @@ class TestSplitTrack:
 
     def test_days_are_balanced_by_verse_count(self):
         # Whole chapters vary a lot (Lucas 1 has 80 verses), so "balanced" means no day triples another
-        sizes = [verses_in(day) for day in split_track("Mateus", "João", 30)]
+        sizes = [verses_in(day) for day in split_track(book_range("Mateus", "João"), 30)]
         assert max(sizes) < 3 * min(sizes)
 
     def test_more_days_than_chapters_splits_inside_chapters(self):
-        days = split_track("Provérbios", "Provérbios", 150)
+        days = split_track(("Provérbios",), 150)
         assert (len(days), all(day for day in days), sum(verses_in(d) for d in days)) == (150, True, 915)
 
     def test_more_days_than_verses_is_rejected(self):
         with pytest.raises(PlanError) as error:
-            split_track("Obadias", "Obadias", 30)
+            split_track(("Obadias",), 30)
         assert error.value.code == "reading_plan.too_many_days"
 
 
@@ -60,6 +62,7 @@ class TestRhythm:
         sizes = {
             slug: len(schedule(slug, plan.default_days or 16, plan.default_weekdays, book="Romanos"))
             for slug, plan in plan_catalog().items()
+            if not plan.needs_books
         }
         assert sizes == {
             "biblia-em-1-ano": 365, "novo-testamento-260-dias": 260, "evangelhos": 90,
@@ -93,13 +96,39 @@ class TestProgress:
     def test_longer_rhythm_keeps_what_was_read(self):
         one_year = schedule()
         read     = mark_read(mark_read({}, one_year[0].passages), one_year[1].passages)
-        statuses = [day_status(read, d) for d in schedule(total_days=730)[:5]]
-        assert statuses == ["read", "read", "read", "read", "unread"]
+        statuses = [day_status(read, d) for d in schedule(total_days=730)[:6]]
+        # the first four days are covered; day 5 may touch the end of what was read
+        assert statuses[:4] == ["read"] * 4 and "read" not in statuses[4:]
 
     def test_shorter_rhythm_shows_a_partly_read_day(self):
         two_years = schedule(total_days=730)
         read      = mark_read({}, two_years[0].passages)
         assert day_status(read, schedule()[0]) == "partial"
+
+
+class TestCustomBooks:
+    def test_books_are_normalized_to_canonical_order_without_repeats(self):
+        assert normalize_books(["galatas", "Romanos", "Gálatas"]) == ("Romanos", "Gálatas")
+
+    def test_unknown_book_rejects_the_list(self):
+        with pytest.raises(PlanError) as error:
+            normalize_books(["Romanos", "Livro que não existe"])
+        assert error.value.code == "reading_plan.invalid_books"
+
+    def test_non_adjacent_books_are_read_in_order(self):
+        days  = split_track(normalize_books(["Gálatas", "Romanos"]), 10)
+        books = [p.book for day in days for p in day]
+        assert books[0] == "Romanos" and books[-1] == "Gálatas" and "1 Coríntios" not in books
+
+    def test_psalm_119_is_spread_over_several_days(self):
+        days = split_track(("Salmos",), 30)
+        with_119 = [i for i, day in enumerate(days) if any(p.chapter == 119 for p in day)]
+        assert len(with_119) >= 2
+
+    def test_no_day_triples_another(self):
+        for books, days in ((("Romanos", "Gálatas"), 20), (("Gênesis",), 50), (("Salmos",), 30)):
+            sizes = [verses_in(day) for day in split_track(normalize_books(list(books)), days)]
+            assert max(sizes) < 3 * min(sizes), (books, days)
 
 
 class TestRealign:

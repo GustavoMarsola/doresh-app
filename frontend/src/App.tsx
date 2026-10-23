@@ -13,6 +13,7 @@ import { Library } from "@/pages/Library";
 import { ReadingPlans } from "@/pages/ReadingPlans";
 import { ReadingPlan } from "@/pages/ReadingPlan";
 import { ReadingPlanDay } from "@/pages/ReadingPlanDay";
+import { PlanGenerator } from "@/pages/PlanGenerator";
 import { Login } from "@/pages/Login";
 import { Register } from '@/pages/Register';
 import { ForgotPassword } from '@/pages/ForgotPassword';
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/home" element={<ChatProvider> <Layout><Dashboard /></Layout> </ChatProvider>} />
               <Route path="/ler" element={<ChatProvider> <Layout fullBleed><ReadBible /></Layout> </ChatProvider>} />
               <Route path="/planos" element={<ChatProvider> <Layout><ReadingPlans /></Layout> </ChatProvider>} />
+              <Route path="/planos/novo" element={<ChatProvider> <Layout><PlanGenerator /></Layout> </ChatProvider>} />
               <Route path="/planos/:id" element={<ChatProvider> <Layout><ReadingPlan /></Layout> </ChatProvider>} />
               <Route path="/planos/:id/dia/:day" element={<ChatProvider> <Layout><ReadingPlanDay /></Layout> </ChatProvider>} />
               <Route path="/estudos" element={<ChatProvider> <Layout><Library /></Layout> </ChatProvider>} />

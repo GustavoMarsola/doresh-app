@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authFetch } from '@/components/auth/utils';
+import { bookSlug, findBookBySlug } from '@/data/bibleCanon';
 
 const API = import.meta.env.VITE_API_HOST;
 
@@ -13,6 +14,7 @@ export interface CatalogPlan {
   title: string;
   description: string;
   needs_book: boolean;
+  needs_books: boolean;
   default_days: number | null;
   default_weekdays: Weekday[];
 }
@@ -39,6 +41,7 @@ export interface PlanSummary {
   plan_slug: string;
   title: string;
   book: string | null;
+  books: string[] | null;
   start_date: string;
   end_date: string;
   total_days: number;
@@ -53,6 +56,25 @@ export interface PlanSummary {
 
 export interface PlanDetail extends PlanSummary {
   days: PlanDay[];
+}
+
+/** POST /reading-plans/preview: os dias que o plano teria, sem salvar nada. */
+export interface PlanPreview {
+  title: string;
+  books: string[] | null;
+  start_date: string;
+  end_date: string;
+  total_days: number;
+  weekdays: Weekday[];
+  reading_days: number;
+  days: PlanDay[];
+}
+
+export interface PlanInput extends Partial<Rhythm> {
+  plan_slug: string;
+  book?: string;
+  books?: string[];
+  title?: string;
 }
 
 export interface Rhythm {
@@ -79,6 +101,8 @@ export const planErrorMessage = (error: unknown) => {
       return 'Escolha pelo menos um dia da semana para ler.';
     case 'reading_plan.invalid_book':
       return 'Escolha um livro da Bíblia.';
+    case 'reading_plan.invalid_books':
+      return 'Escolha pelo menos um livro da Bíblia.';
     case 'reading_plan.not_found':
       return 'Plano não encontrado. Ele pode ter sido removido.';
     default:
@@ -135,6 +159,24 @@ export const countReadingDays = (start: string, totalDays: number, weekdays: Wee
   return count;
 };
 
+/** Dias de calendário a partir de `start` necessários para caberem `readingDays` dias de leitura. */
+export const spanFor = (start: string, readingDays: number, weekdays: Weekday[]) => {
+  const first = parseISODate(start);
+  const allowed = new Set(weekdays);
+  let span = 0;
+  let found = 0;
+  while (found < readingDays && allowed.size) {
+    const d = new Date(first.getFullYear(), first.getMonth(), first.getDate() + span);
+    if (allowed.has((((d.getDay() + 6) % 7) + 1) as Weekday)) found++;
+    span++;
+  }
+  return span;
+};
+
+/** Dias de calendário de `start` até `end`, incluindo os dois. */
+export const daysBetween = (start: string, end: string) =>
+  Math.round((parseISODate(end).getTime() - parseISODate(start).getTime()) / 86_400_000) + 1;
+
 /** Índice do dia que o calendário marca para hoje (o último dia com data ≤ hoje), ou 0 antes do início. */
 export const scheduledIndex = (days: PlanDay[], today = todayISO()) => {
   let index = 0;
@@ -180,6 +222,19 @@ export const readerLink = (p: PlanPassage) => `/ler?livro=${encodeURIComponent(p
 
 // ── API ──
 
+/** O backend usa a grafia da tabela de livros ("Oseias"); o app usa a do cânone do frontend ("Oséias"). */
+const displayBook = (name: string) => findBookBySlug(bookSlug(name))?.name ?? name;
+const normalizeDay = (day: PlanDay): PlanDay => ({
+  ...day,
+  passages: day.passages.map((p) => ({ ...p, book: displayBook(p.book) })),
+});
+const normalizeSummary = <T extends PlanSummary>(plan: T): T => ({
+  ...plan,
+  books: plan.books?.map(displayBook) ?? null,
+  next_day: plan.next_day && normalizeDay(plan.next_day),
+});
+const normalizePlan = (plan: PlanDetail): PlanDetail => ({ ...normalizeSummary(plan), days: plan.days.map(normalizeDay) });
+
 const request = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
   const res = await authFetch(`${API}${path}`, {
     ...init,
@@ -194,16 +249,22 @@ const request = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
 
 export const plansApi = {
   catalog: () => request<{ plans: CatalogPlan[] }>('/reading-plans/catalog').then((r) => r.plans),
-  list: () => request<{ plans: PlanSummary[] }>('/reading-plans').then((r) => r.plans),
-  get: (id: string) => request<{ plan: PlanDetail }>(`/reading-plans/${id}`).then((r) => r.plan),
-  start: (input: { plan_slug: string; book?: string } & Partial<Rhythm>) =>
-    request<{ plan: PlanDetail }>('/reading-plans', { method: 'POST', body: JSON.stringify(input) }).then((r) => r.plan),
+  list: () => request<{ plans: PlanSummary[] }>('/reading-plans').then((r) => r.plans.map(normalizeSummary)),
+  get: (id: string) => request<{ plan: PlanDetail }>(`/reading-plans/${id}`).then((r) => normalizePlan(r.plan)),
+  preview: (input: PlanInput) =>
+    request<PlanPreview>('/reading-plans/preview', { method: 'POST', body: JSON.stringify(input) }).then((r) => ({
+      ...r,
+      books: r.books?.map(displayBook) ?? null,
+      days: r.days.map(normalizeDay),
+    })),
+  start: (input: PlanInput) =>
+    request<{ plan: PlanDetail }>('/reading-plans', { method: 'POST', body: JSON.stringify(input) }).then((r) => normalizePlan(r.plan)),
   updateRhythm: (id: string, rhythm: Partial<Rhythm>) =>
-    request<{ plan: PlanDetail }>(`/reading-plans/${id}`, { method: 'PATCH', body: JSON.stringify(rhythm) }).then((r) => r.plan),
+    request<{ plan: PlanDetail }>(`/reading-plans/${id}`, { method: 'PATCH', body: JSON.stringify(rhythm) }).then((r) => normalizePlan(r.plan)),
   setRead: (id: string, day: number, read: boolean) =>
-    request<{ plan: PlanDetail }>(`/reading-plans/${id}/days/${day}/read`, { method: read ? 'PUT' : 'DELETE' }).then((r) => r.plan),
+    request<{ plan: PlanDetail }>(`/reading-plans/${id}/days/${day}/read`, { method: read ? 'PUT' : 'DELETE' }).then((r) => normalizePlan(r.plan)),
   realign: (id: string) =>
-    request<{ plan: PlanDetail }>(`/reading-plans/${id}/realign`, { method: 'POST', body: JSON.stringify({ today: todayISO() }) }).then((r) => r.plan),
+    request<{ plan: PlanDetail }>(`/reading-plans/${id}/realign`, { method: 'POST', body: JSON.stringify({ today: todayISO() }) }).then((r) => normalizePlan(r.plan)),
   remove: (id: string) => request<void>(`/reading-plans/${id}`, { method: 'DELETE' }),
 };
 
@@ -218,6 +279,16 @@ export const planKeys = {
 
 export const usePlanCatalog = () =>
   useQuery({ queryKey: planKeys.catalog, queryFn: plansApi.catalog, staleTime: Infinity });
+
+/** Pré-visualização do plano; `input` nulo enquanto a escolha está incompleta. */
+export const usePlanPreview = (input: PlanInput | null) =>
+  useQuery({
+    queryKey: ['reading-plans', 'preview', input],
+    queryFn: () => plansApi.preview(input!),
+    enabled: !!input,
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
 
 export const useMyPlans = () => useQuery({ queryKey: planKeys.list, queryFn: plansApi.list });
 

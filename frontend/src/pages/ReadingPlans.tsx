@@ -24,6 +24,10 @@ export const ReadingPlans: React.FC = () => {
   const [chosen, setChosen] = React.useState<CatalogPlan | null>(null);
 
   const open = (plan: CatalogPlan) => {
+    if (plan.needs_books) {
+      navigate('/planos/novo');
+      return;
+    }
     startPlan.reset();
     setChosen(plan);
   };
@@ -91,7 +95,7 @@ export const ReadingPlans: React.FC = () => {
                 <h3 className="font-semibold text-foreground">{plan.title}</h3>
                 <p className="mt-1 flex-1 text-sm text-muted-foreground">{plan.description}</p>
                 <Button className="mt-4 self-start" variant="outline" onClick={() => open(plan)}>
-                  Começar
+                  {plan.needs_books ? 'Montar plano' : 'Começar'}
                 </Button>
               </li>
             ))}
