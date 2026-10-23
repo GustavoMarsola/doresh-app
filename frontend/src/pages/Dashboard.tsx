@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { PlusCircle, BookOpen, ScrollText, MessageSquare, Highlighter } from "lucide-react";
+import { PlusCircle, BookOpen, ScrollText, MessageSquare, Highlighter, CalendarCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { authFetch } from '@/components/auth/utils';
 import { formatReference } from '@/data/bibleCanon';
 import { bookName, commentVerses, groupHighlights, lastReaderVersion, type Annotations, type Comment } from '@/lib/annotations';
+import { formatPassages, useMyPlans } from '@/lib/readingPlans';
 
 const readerLink = (slug: string, chapter: number) =>
   `/ler?livro=${encodeURIComponent(bookName(slug))}&cap=${chapter}`;
@@ -62,6 +63,8 @@ export const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div> */}
+
+      <ContinueReading />
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
@@ -190,5 +193,41 @@ export const Dashboard: React.FC = () => {
         </CardContent>
       </Card>
     </div>
+  );
+};
+
+/** "Retomar de onde parei": a próxima leitura dos planos em andamento (os mais recentes primeiro). */
+const ContinueReading: React.FC = () => {
+  const plans = useMyPlans();
+  const active = (plans.data ?? []).filter((p) => p.next_day).slice(0, 2);
+  if (!active.length) return null;
+
+  return (
+    <section aria-labelledby="continue-heading" className="space-y-3">
+      <h2 id="continue-heading" className="flex items-center gap-2 text-lg font-semibold text-foreground">
+        <CalendarCheck className="h-5 w-5 text-primary" />
+        Continue sua leitura
+      </h2>
+      <ul className="grid gap-3 md:grid-cols-2">
+        {active.map((plan) => (
+          <li key={plan.id}>
+            <Link
+              to={`/planos/${plan.id}/dia/${plan.next_day!.index}`}
+              className="flex items-center justify-between gap-4 rounded-2xl border border-primary/30 bg-primary/5 p-4 transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="min-w-0">
+                <span className="block truncate text-sm text-muted-foreground">
+                  {plan.title} · dia {plan.next_day!.index} de {plan.reading_days}
+                </span>
+                <span className="mt-0.5 block truncate font-crimson text-lg text-foreground">
+                  {formatPassages(plan.next_day!.passages).join('; ')}
+                </span>
+              </span>
+              <span className="shrink-0 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground">Retomar</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 };

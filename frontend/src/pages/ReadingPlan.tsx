@@ -185,10 +185,15 @@ const PlanView: React.FC<{ plan: PlanDetail }> = ({ plan }) => {
               </li>
             ))}
           </ul>
-          <Button className="mt-5" onClick={() => toggle(next)} disabled={setRead.isPending}>
-            {setRead.isPending && setRead.variables?.day === next.index ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            Marcar dia {next.index} como lido
-          </Button>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <Button onClick={() => toggle(next)} disabled={setRead.isPending}>
+              {setRead.isPending && setRead.variables?.day === next.index ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              Marcar dia {next.index} como lido
+            </Button>
+            <Button asChild variant="outline">
+              <Link to={`/planos/${plan.id}/dia/${next.index}`}>Abrir o dia e minhas anotações</Link>
+            </Button>
+          </div>
           {behind > 0 && (
             <p className="mt-4 text-sm text-muted-foreground">
               Pelo calendário, hoje seria o dia {scheduled}. Siga no seu ritmo ou{' '}
@@ -293,6 +298,7 @@ const DayList: React.FC<{
                 {month.days.map((day) => (
                   <DayRow
                     key={day.index}
+                    planId={plan.id}
                     day={day}
                     isToday={day.date === today}
                     isNext={day.index === plan.next_day?.index}
@@ -309,7 +315,8 @@ const DayList: React.FC<{
   );
 };
 
-const DayRow: React.FC<{ day: PlanDay; isToday: boolean; isNext: boolean; pending: boolean; onToggle: () => void }> = ({
+const DayRow: React.FC<{ planId: string; day: PlanDay; isToday: boolean; isNext: boolean; pending: boolean; onToggle: () => void }> = ({
+  planId,
   day,
   isToday,
   isNext,
@@ -333,7 +340,7 @@ const DayRow: React.FC<{ day: PlanDay; isToday: boolean; isNext: boolean; pendin
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : <Check className="h-4 w-4" />}
       </button>
-      <div className="min-w-0 flex-1">
+      <Link to={`/planos/${planId}/dia/${day.index}`} className="min-w-0 flex-1 rounded-md hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <p className="text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">Dia {day.index}</span> · {formatDay(day.date)}
           {isToday && <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">hoje</span>}
@@ -341,7 +348,7 @@ const DayRow: React.FC<{ day: PlanDay; isToday: boolean; isNext: boolean; pendin
         <p className="mt-0.5 font-crimson text-[17px] leading-snug text-foreground">
           {formatPassages(day.passages).join(' · ')}
         </p>
-      </div>
+      </Link>
       <Link
         to={readerLink(day.passages[0])}
         className="shrink-0 rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground"

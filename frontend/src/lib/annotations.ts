@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { authFetch } from '@/components/auth/utils';
-import { findBookBySlug } from '@/data/bibleCanon';
+import { bookSlug, findBookBySlug } from '@/data/bibleCanon';
 
 const API = import.meta.env.VITE_API_HOST;
 
@@ -61,6 +61,24 @@ export const groupHighlights = (highlights: Highlight[]): HighlightGroup[] => {
     }
   }
   return groups.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+};
+
+/** Um trecho de capítulo, como os dias de um plano de leitura. */
+export interface VerseRange {
+  book: string; // nome de exibição ("1 Coríntios")
+  chapter: number;
+  verse_start: number;
+  verse_end: number;
+}
+
+/** Destaques e comentários que caem dentro dos trechos (um comentário conta se tocar o trecho). */
+export const annotationsIn = (annotations: Annotations, ranges: VerseRange[]): Annotations => {
+  const inRange = (slug: string, chapter: number, start: number, end: number) =>
+    ranges.some((r) => bookSlug(r.book) === slug && r.chapter === chapter && start <= r.verse_end && end >= r.verse_start);
+  return {
+    highlights: annotations.highlights.filter((h) => inRange(h.book, h.chapter, h.verse, h.verse)),
+    comments: annotations.comments.filter((c) => inRange(c.book, c.chapter, c.verse_start, c.verse_end)),
+  };
 };
 
 export const commentVerses = (c: Comment) =>
