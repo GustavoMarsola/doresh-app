@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import {
 	BookOpen,
+	CalendarCheck,
 	ChevronsUpDown,
 	Heart,
 	Home,
@@ -50,6 +51,7 @@ type NavItem = {
 const mainItems: NavItem[] = [
 	{ to: '/home', label: 'Início', icon: Home },
 	{ to: '/ler', label: 'Bíblia', icon: BookOpen },
+	{ to: '/planos', label: 'Planos', icon: CalendarCheck },
 	{ to: '/estudos', label: 'Meus estudos', shortLabel: 'Estudos', icon: Library },
 	...(FEATURES.ruach ? [{ to: '/assistente', label: 'Ruach', icon: RuachIcon }] : []),
 ];
