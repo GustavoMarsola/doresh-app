@@ -18,6 +18,8 @@ class UserReadingPlanModel(EntityModel):
     user_id:     Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), ForeignKey("users.id"), index=True)
     plan_slug:   Mapped[str]       = mapped_column()
     book:        Mapped[str]       = mapped_column(nullable=True)  # only for plans where the user picks the book
+    books:       Mapped[list]      = mapped_column(JSON, nullable=True)  # only for custom plans: the books chosen
+    title:       Mapped[str]       = mapped_column(nullable=True)  # only for custom plans
     start_date:  Mapped[date]      = mapped_column()
     total_days:  Mapped[int]       = mapped_column()
     weekdays:    Mapped[str]       = mapped_column()  # ISO weekdays read, e.g. "12345"

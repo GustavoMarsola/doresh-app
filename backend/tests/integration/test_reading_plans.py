@@ -60,6 +60,46 @@ class TestStartPlan:
         assert (response.status_code, response.json()["detail"]) == (422, "reading_plan.too_many_days")
 
 
+class TestCustomPlan:
+    CUSTOM = {"plan_slug": "personalizado", "books": ["Gálatas", "romanos"], "start_date": "2026-10-26", "total_days": 20}
+
+    async def test_preview_shows_the_days_without_saving(self, client_as, user_a):
+        client   = await client_as(user_a)
+        response = await client.post(f"{PLANS_URL}/preview", json=self.CUSTOM)
+        preview  = response.json()
+        saved    = (await client.get(PLANS_URL)).json()["plans"]
+        assert (response.status_code, preview["title"], preview["books"], preview["reading_days"], saved) == (
+            200, "Romanos e Gálatas", ["Romanos", "Gálatas"], 20, [],
+        )
+
+    async def test_start_custom_plan_with_its_own_title(self, client_as, user_a):
+        plan = await start(await client_as(user_a), **self.CUSTOM, title="Romanos e Gálatas até a Páscoa")
+        assert (plan["title"], plan["books"], plan["reading_days"]) == (
+            "Romanos e Gálatas até a Páscoa", ["Romanos", "Gálatas"], 20,
+        )
+
+    async def test_custom_plan_keeps_its_books_when_the_rhythm_changes(self, client_as, user_a):
+        client = await client_as(user_a)
+        plan   = await start(client, **self.CUSTOM)
+        plan   = (await client.patch(f"{PLANS_URL}/{plan['id']}", json={"total_days": 10})).json()["plan"]
+        books  = {p["book"] for d in plan["days"] for p in d["passages"]}
+        assert (plan["reading_days"], books) == (10, {"Romanos", "Gálatas"})
+
+    async def test_custom_plan_without_books_is_rejected(self, client_as, user_a):
+        response = await (await client_as(user_a)).post(f"{PLANS_URL}/preview", json={"plan_slug": "personalizado"})
+        assert (response.status_code, response.json()["detail"]) == (422, "reading_plan.invalid_books")
+
+    async def test_unknown_book_is_rejected(self, client_as, user_a):
+        response = await (await client_as(user_a)).post(
+            f"{PLANS_URL}/preview", json={"plan_slug": "personalizado", "books": ["Romanos", "Livro X"]},
+        )
+        assert (response.status_code, response.json()["detail"]) == (422, "reading_plan.invalid_books")
+
+    async def test_preview_requires_login(self, api_key_client):
+        response = await api_key_client.post(f"{PLANS_URL}/preview", json=self.CUSTOM)
+        assert response.status_code == 401
+
+
 class TestProgress:
     async def test_marking_days_counts_days_read(self, client_as, user_a):
         client = await client_as(user_a)
@@ -96,7 +136,7 @@ class TestRhythm:
         await mark(client, plan["id"], 1)
         await mark(client, plan["id"], 2)
         plan = (await client.patch(f"{PLANS_URL}/{plan['id']}", json={"total_days": 730})).json()["plan"]
-        assert (plan["reading_days"], statuses(plan, 5)) == (730, ["read", "read", "read", "read", "unread"])
+        assert (plan["reading_days"], statuses(plan, 4), plan["days_read"]) == (730, ["read"] * 4, 4)
 
     async def test_weekdays_only_drops_weekends(self, client_as, user_a):
         client = await client_as(user_a)

@@ -7,6 +7,7 @@ from src.schemas.reading_plans_schemas import (
     PostReadingPlanSchema,
     PostRealignSchema,
     ReadingPlanCatalogResponse,
+    ReadingPlanPreview,
     ReadingPlanResponse,
     ReadingPlansResponse,
 )
@@ -18,7 +19,7 @@ router = APIRouter(prefix="/reading-plans")
 
 NOT_FOUND = {status.HTTP_404_NOT_FOUND: {"description": "reading_plan.not_found / reading_plan.day_not_found"}}
 INVALID   = {status.HTTP_422_UNPROCESSABLE_ENTITY: {
-    "description": "reading_plan.unknown_plan · invalid_book · invalid_duration · invalid_weekdays · too_many_days",
+    "description": "reading_plan.unknown_plan · invalid_book · invalid_books · invalid_duration · invalid_weekdays · too_many_days",
 }}
 
 
@@ -51,6 +52,17 @@ async def post_reading_plan(
     redis_repository: RedisRepository = Depends(),
 ) -> ReadingPlanResponse:
     return await ReadingPlansUseCase(app_repository, redis_repository).start_plan(payload_token, data)
+
+
+@router.post(path="/preview", status_code=status.HTTP_200_OK, response_model=ReadingPlanPreview, responses=INVALID)
+async def post_reading_plan_preview(
+    request: Request,
+    data: PostReadingPlanSchema,
+    payload_token: dict = Depends(session_token_required),
+    app_repository: AppRepository = Depends(),
+    redis_repository: RedisRepository = Depends(),
+) -> ReadingPlanPreview:
+    return ReadingPlansUseCase(app_repository, redis_repository).preview_plan(data)
 
 
 @router.get(path="/{plan_id}", status_code=status.HTTP_200_OK, response_model=ReadingPlanResponse, responses=NOT_FOUND)

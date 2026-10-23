@@ -205,20 +205,21 @@ Outros erros de conta (campo `detail`):
 
 #### Planos de leitura — `/api/v1/reading-plans`
 
-Os planos padrão vivem em `backend/src/common/reading_plans/catalog.json` (só referências). O ritmo (início, duração, dias da semana) define quantos dias de leitura há; cada trecho é dividido nesses dias equilibrando o número de versículos. O progresso guarda os **versículos lidos**, por isso mudar o ritmo nunca apaga o que foi lido.
+Os planos padrão vivem em `backend/src/common/reading_plans/catalog.json` (só referências); o `personalizado` usa os livros escolhidos pela pessoa. O ritmo (início, duração, dias da semana) define quantos dias de leitura há; cada trecho é dividido nesses dias equilibrando o número de versículos (capítulos bem maiores que um dia, como o Salmo 119 num plano curto, são repartidos). O progresso guarda os **versículos lidos**, por isso mudar o ritmo nunca apaga o que foi lido.
 
 | Método | Rota | Auth | Descrição |
 |---|---|---|---|
 | `GET` | `/catalog` | Bearer | Planos padrão disponíveis |
 | `GET` | `` | Bearer | Meus planos, com progresso e próxima leitura |
-| `POST` | `` | Bearer | Começa um plano (`plan_slug`, e opcionalmente `book`, `start_date`, `total_days`, `weekdays` ISO 1–7) |
+| `POST` | `` | Bearer | Começa um plano (`plan_slug`, e opcionalmente `book`, `books` + `title` no personalizado, `start_date`, `total_days`, `weekdays` ISO 1–7) |
+| `POST` | `/preview` | Bearer | Mesmo corpo do anterior: devolve os dias que o plano teria, sem salvar |
 | `GET` | `/{id}` | Bearer | Plano com todos os dias e o estado de cada um (`read`, `partial`, `unread`) |
 | `PATCH` | `/{id}` | Bearer | Muda o ritmo, mantendo o progresso |
 | `PUT` / `DELETE` | `/{id}/days/{n}/read` | Bearer | Marca ou desmarca o dia `n` como lido |
 | `POST` | `/{id}/realign` | Bearer | Põe a próxima leitura em `today` (data do cliente), sem mudar o número de dias |
 | `DELETE` | `/{id}` | Bearer | Remove o plano e o progresso |
 
-Erros (campo `detail`): 404 `reading_plan.not_found` / `reading_plan.day_not_found`; 422 `reading_plan.unknown_plan`, `invalid_book`, `invalid_duration`, `invalid_weekdays`, `too_many_days`.
+Erros (campo `detail`): 404 `reading_plan.not_found` / `reading_plan.day_not_found`; 422 `reading_plan.unknown_plan`, `invalid_book`, `invalid_books`, `invalid_duration`, `invalid_weekdays`, `too_many_days`.
 
 #### Bíblia — `/api/v1/bible`
 

@@ -12,6 +12,7 @@ from src.common.reading_plans import (
     get_plan,
     mark_read,
     mark_unread,
+    normalize_books,
     plan_catalog,
     realigned_start,
     span_for,
@@ -29,6 +30,7 @@ from src.schemas.reading_plans_schemas import (
     ReadingPlanCatalogResponse,
     ReadingPlanDayOut,
     ReadingPlanDetail,
+    ReadingPlanPreview,
     ReadingPlanResponse,
     ReadingPlansResponse,
     ReadingPlanSummary,
@@ -59,8 +61,50 @@ def _weekdays(value: list[int] | str) -> tuple[int, ...]:
 
 def _schedule(plan: UserReadingPlanModel) -> list[PlanDay]:
     return build_schedule(
-        get_plan(plan.plan_slug), plan.book, plan.start_date, plan.total_days, _weekdays(plan.weekdays)
+        get_plan(plan.plan_slug), plan.book, plan.start_date, plan.total_days, _weekdays(plan.weekdays), plan.books
     )
+
+
+def _books_title(books: tuple[str, ...]) -> str:
+    """Fallback name of a custom plan: "Romanos e Gálatas", "Efésios, Filipenses e Colossenses"..."""
+    if len(books) == 1:
+        return f"Leitura de {books[0]}"
+    if len(books) <= 3:
+        return f"{', '.join(books[:-1])} e {books[-1]}"
+    return f"{books[0]}, {books[1]} e mais {len(books) - 2} livros"
+
+
+def _plan_fields(data: PostReadingPlanSchema) -> dict:
+    """Validated columns of a new plan (raises PlanError); the same rules serve the preview."""
+    definition = get_plan(data.plan_slug)
+    book, books, title = None, None, None
+    if definition.needs_book:
+        book = find_book(data.book) if data.book else None
+        if book is None:
+            raise PlanError("reading_plan.invalid_book")
+    if definition.needs_books:
+        books = list(normalize_books(data.books))
+        title = (data.title or "").strip() or _books_title(tuple(books))
+    fields = {
+        "plan_slug":  definition.slug,
+        "book":       book,
+        "books":      books,
+        "title":      title,
+        "start_date": data.start_date or set_local_time().date(),
+        "total_days": data.total_days or default_total_days(definition, book, books),
+        "weekdays":   "".join(map(str, _weekdays(data.weekdays or definition.default_weekdays))),
+    }
+    build_schedule(definition, book, fields["start_date"], fields["total_days"], _weekdays(fields["weekdays"]), books)
+    return fields
+
+
+def _title(fields_or_plan) -> str:
+    title, book, slug = (
+        (fields_or_plan["title"], fields_or_plan["book"], fields_or_plan["plan_slug"])
+        if isinstance(fields_or_plan, dict)
+        else (fields_or_plan.title, fields_or_plan.book, fields_or_plan.plan_slug)
+    )
+    return title or (f"Leitura de {book}" if book else get_plan(slug).title)
 
 
 def _day_out(day: PlanDay, read: dict) -> ReadingPlanDayOut:
@@ -86,8 +130,9 @@ def _summary_fields(plan: UserReadingPlanModel, days: list[ReadingPlanDayOut]) -
     return {
         "id":           plan.id,
         "plan_slug":    plan.plan_slug,
-        "title":        f"Leitura de {plan.book}" if plan.book else get_plan(plan.plan_slug).title,
+        "title":        _title(plan),
         "book":         plan.book,
+        "books":        plan.books,
         "start_date":   plan.start_date,
         "end_date":     days[-1].date,
         "total_days":   plan.total_days,
@@ -118,6 +163,7 @@ class ReadingPlansUseCase:
                 title=p.title,
                 description=p.description,
                 needs_book=p.needs_book,
+                needs_books=p.needs_books,
                 default_days=p.default_days,
                 default_weekdays=list(p.default_weekdays),
             )
@@ -138,24 +184,33 @@ class ReadingPlansUseCase:
 
     async def start_plan(self, payload_token: dict, data: PostReadingPlanSchema) -> ReadingPlanResponse:
         try:
-            definition = get_plan(data.plan_slug)
-            book       = None
-            if definition.needs_book:
-                book = find_book(data.book) if data.book else None
-                if book is None:
-                    raise PlanError("reading_plan.invalid_book")
-            fields = {
-                "plan_slug":  definition.slug,
-                "book":       book,
-                "start_date": data.start_date or set_local_time().date(),
-                "total_days": data.total_days or default_total_days(definition, book),
-                "weekdays":   "".join(map(str, _weekdays(data.weekdays or definition.default_weekdays))),
-            }
-            build_schedule(definition, book, fields["start_date"], fields["total_days"], _weekdays(fields["weekdays"]))
+            fields = _plan_fields(data)
         except PlanError as error:
             raise _invalid(error)
         plan = await self.repository.reading_plans.create(_user_id(payload_token), fields)
         return self._detail(plan)
+
+    def preview_plan(self, data: PostReadingPlanSchema) -> ReadingPlanPreview:
+        """The days a plan would have, without saving anything."""
+        try:
+            fields = _plan_fields(data)
+            days   = build_schedule(
+                get_plan(fields["plan_slug"]), fields["book"], fields["start_date"], fields["total_days"],
+                _weekdays(fields["weekdays"]), fields["books"],
+            )
+        except PlanError as error:
+            raise _invalid(error)
+        days_out = [_day_out(day, {}) for day in days]
+        return ReadingPlanPreview(
+            title=_title(fields),
+            books=fields["books"],
+            start_date=fields["start_date"],
+            end_date=days_out[-1].date,
+            total_days=fields["total_days"],
+            weekdays=list(_weekdays(fields["weekdays"])),
+            reading_days=len(days_out),
+            days=days_out,
+        )
 
     async def update_rhythm(self, payload_token: dict, plan_id: UUID, data: PatchReadingPlanSchema) -> ReadingPlanResponse:
         plan = await self.repository.reading_plans.get(_user_id(payload_token), plan_id, for_update=True)
@@ -176,6 +231,7 @@ class ReadingPlansUseCase:
                 changes.get("start_date", plan.start_date),
                 changes.get("total_days", plan.total_days),
                 _weekdays(changes.get("weekdays", plan.weekdays)),
+                plan.books,
             )
         except PlanError as error:
             await self.repository.reading_plans.rollback()
