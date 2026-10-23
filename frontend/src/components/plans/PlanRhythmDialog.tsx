@@ -21,8 +21,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { BIBLE_BOOKS } from '@/data/bibleCanon';
-import { WEEKDAYS, countReadingDays, type Rhythm, type Weekday } from '@/lib/readingPlans';
-import { cn } from '@/lib/utils';
+import { countReadingDays, type Rhythm, type Weekday } from '@/lib/readingPlans';
+import { WeekdayPicker } from '@/components/plans/WeekdayPicker';
 
 const DURATION_PRESETS = [30, 91, 182, 365, 547, 730, 1095];
 
@@ -94,11 +94,6 @@ export const PlanRhythmDialog: React.FC<PlanRhythmDialogProps> = ({
   const options = Array.from(new Set([...DURATION_PRESETS, totalDays, ...(planDefault ? [planDefault] : [])])).sort((a, b) => a - b);
   const readingDays = startDate ? countReadingDays(startDate, totalDays, weekdays) : 0;
   const localError = !startDate ? 'Escolha a data de início.' : weekdays.length === 0 ? 'Escolha pelo menos um dia da semana.' : null;
-
-  const toggleWeekday = (day: Weekday) =>
-    setWeekdays((current) =>
-      current.includes(day) ? current.filter((d) => d !== day) : [...current, day].sort((a, b) => a - b),
-    );
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,40 +170,7 @@ export const PlanRhythmDialog: React.FC<PlanRhythmDialogProps> = ({
             </div>
           </div>
 
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium leading-none">Dias de leitura</legend>
-            <div className="flex flex-wrap gap-2 pt-1">
-              {WEEKDAYS.map((day) => {
-                const active = weekdays.includes(day.value);
-                return (
-                  <button
-                    key={day.value}
-                    type="button"
-                    aria-pressed={active}
-                    aria-label={day.long}
-                    title={day.long}
-                    onClick={() => toggleWeekday(day.value)}
-                    className={cn(
-                      'flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                      active
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-border bg-background text-muted-foreground hover:text-foreground',
-                    )}
-                  >
-                    {day.short}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1 text-sm">
-              <button type="button" className="font-medium text-primary hover:underline" onClick={() => setWeekdays([1, 2, 3, 4, 5, 6, 7])}>
-                Todos os dias
-              </button>
-              <button type="button" className="font-medium text-primary hover:underline" onClick={() => setWeekdays([1, 2, 3, 4, 5])}>
-                Só dias úteis
-              </button>
-            </div>
-          </fieldset>
+          <WeekdayPicker value={weekdays} onChange={setWeekdays} />
 
           <p className="rounded-xl bg-muted/60 px-4 py-3 text-sm text-foreground" aria-live="polite">
             {readingDays > 0 ? (

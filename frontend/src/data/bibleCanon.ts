@@ -88,3 +88,25 @@ export const formatReference = (book: string, chapter: number, verses: number[])
   }
   return `${book} ${chapter}:${ranges.join(', ')}`;
 };
+
+/** Livros de `first` a `last`, na ordem canônica. */
+export const booksBetween = (first: string, last: string) => {
+  const names = BIBLE_BOOKS.map((b) => b.name);
+  return names.slice(names.indexOf(first), names.indexOf(last) + 1);
+};
+
+/** Blocos usados para escolher livros de uma vez (ex.: no plano personalizado). */
+export const BOOK_GROUPS: { label: string; books: string[] }[] = [
+  { label: 'Antigo Testamento', books: booksBetween('Gênesis', 'Malaquias') },
+  { label: 'Novo Testamento', books: booksBetween('Mateus', 'Apocalipse') },
+  { label: 'Pentateuco', books: booksBetween('Gênesis', 'Deuteronômio') },
+  { label: 'Livros históricos', books: booksBetween('Josué', 'Ester') },
+  { label: 'Poéticos e sapienciais', books: booksBetween('Jó', 'Cantares') },
+  { label: 'Profetas maiores', books: booksBetween('Isaías', 'Daniel') },
+  { label: 'Profetas menores', books: booksBetween('Oséias', 'Malaquias') },
+  { label: 'Evangelhos', books: booksBetween('Mateus', 'João') },
+  { label: 'Atos', books: ['Atos'] },
+  { label: 'Cartas de Paulo', books: booksBetween('Romanos', 'Filemom') },
+  { label: 'Cartas gerais', books: booksBetween('Hebreus', 'Judas') },
+  { label: 'Apocalipse', books: ['Apocalipse'] },
+];
