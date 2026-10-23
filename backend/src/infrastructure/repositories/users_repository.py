@@ -13,6 +13,7 @@ from src.infrastructure.database.models.users_models import (
 )
 from src.infrastructure.database.models.studies_models import StudyModel, StudySectionModel, StudyReferenceModel
 from src.infrastructure.database.models.ai_models import ChatAIModel
+from src.infrastructure.database.models.reading_plans_models import UserReadingPlanModel
 from src.infrastructure.database.models.bible_models import BibleHighlightsModel, BibleCommentsModel
 from src.common.utilities import set_local_time
 
@@ -207,7 +208,10 @@ class UsersRepository:
         await self.db_session.execute(delete(ChatAIModel).where(ChatAIModel.session_id.in_(session_ids)))
         await self.db_session.execute(delete(StudySectionModel).where(StudySectionModel.study_id.in_(user_studies)))
         await self.db_session.execute(delete(StudyReferenceModel).where(StudyReferenceModel.study_id.in_(user_studies)))
-        for model in (StudyModel, BibleHighlightsModel, BibleCommentsModel, SessionsModel, UsersVerificationModel):
+        for model in (
+            StudyModel, BibleHighlightsModel, BibleCommentsModel, UserReadingPlanModel,
+            SessionsModel, UsersVerificationModel,
+        ):
             await self.db_session.execute(delete(model).where(model.user_id == user_id))
 
         address_id = user.address_id

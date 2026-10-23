@@ -5,6 +5,7 @@ erases the user and everything they own — and nothing that belongs to anyone e
 from sqlalchemy import func, select
 
 from src.infrastructure.database.models.bible_models import BibleCommentsModel, BibleHighlightsModel
+from src.infrastructure.database.models.reading_plans_models import UserReadingPlanModel
 from src.infrastructure.database.models.studies_models import StudyModel
 from src.infrastructure.database.models.users_models import SessionsModel, UsersModel
 from src.infrastructure.database.settings import AsyncSessionLocal
@@ -16,11 +17,11 @@ STUDY_URL        = "/api/v1/study"
 HIGHLIGHTS_URL   = "/api/v1/bible/highlights"
 COMMENTS_URL     = "/api/v1/bible/comments"
 
-OWNED_MODELS = (StudyModel, BibleHighlightsModel, BibleCommentsModel, SessionsModel)
+OWNED_MODELS = (StudyModel, BibleHighlightsModel, BibleCommentsModel, UserReadingPlanModel, SessionsModel)
 
 
 async def add_content(client) -> None:
-    """One study (with a section and a reference), one highlight and one comment."""
+    """One study (with a section and a reference), one highlight, one comment and one reading plan."""
     study = await client.post(STUDY_URL, json={
         "title":      "Estudo de teste",
         "sections":   [{"title": "Ponto", "text": "Texto do ponto"}],
@@ -30,7 +31,9 @@ async def add_content(client) -> None:
     comment   = await client.post(COMMENTS_URL, json={
         "book": "João", "chapter": 3, "verse_start": 16, "verse_end": 17, "comment": "Comentário de teste",
     })
-    assert [r.status_code for r in (study, highlight, comment)] == [201, 200, 201], [r.text for r in (study, highlight, comment)]
+    plan      = await client.post("/api/v1/reading-plans", json={"plan_slug": "evangelhos"})
+    responses = (study, highlight, comment, plan)
+    assert [r.status_code for r in responses] == [201, 200, 201, 201], [r.text for r in responses]
 
 
 async def owned_rows(user_id) -> dict[str, int]:
@@ -54,7 +57,7 @@ class TestDeleteAccount:
         response = await delete_account(client, user_a.password)
         assert (response.status_code, await owned_rows(user_a.user_id)) == (
             200,
-            {"studies": 0, "bible_highlights": 0, "bible_comments": 0, "sessions": 0, "users": 0},
+            {"studies": 0, "bible_highlights": 0, "bible_comments": 0, "user_reading_plans": 0, "sessions": 0, "users": 0},
         )
 
     async def test_other_users_data_is_kept(self, client_as, user_a, user_b):
@@ -64,7 +67,7 @@ class TestDeleteAccount:
         await add_content(client_b)
         await delete_account(client_a, user_a.password)
         assert await owned_rows(user_b.user_id) == {
-            "studies": 1, "bible_highlights": 1, "bible_comments": 1, "sessions": 1, "users": 1,
+            "studies": 1, "bible_highlights": 1, "bible_comments": 1, "user_reading_plans": 1, "sessions": 1, "users": 1,
         }
 
     async def test_token_and_login_stop_working(self, client_as, api_key_client, user_a):
